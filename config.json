@@ -13,17 +13,13 @@
     "w1_populasi": 0.35,
     "w2_akses_jalan": 0.25,
     "w3_fasilitas": 0.20,
-    "w4_kompetitor": 0.20,
-    "w5_biaya_lahan": 0.15
+    "w4_kompetitor": 0.20
   },
   "fitness_params": {
     "sigma_populasi": 250.0,
     "sigma_jalan": 150.0,
     "sigma_fasilitas": 200.0,
     "competitor_d_opt": 350.0,
-    "land_cost_center_x": 1000.0,
-    "land_cost_center_y": 750.0,
-    "land_cost_sigma": 600.0,
     "penalty_forbidden": 1000.0,
     "penalty_out_of_bounds": 1000.0,
     "facility_weights": {

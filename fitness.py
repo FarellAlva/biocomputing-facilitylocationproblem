@@ -1,7 +1,7 @@
 """
 Modul Fungsi Fitness (fitness.py)
 Menghitung fungsi kesesuaian (fitness) multi-kriteria untuk penempatan minimarket:
-F(x,y) = w1*Populasi + w2*AksesJalan + w3*Fasilitas + w4*Kompetitor - w5*BiayaLahan - Penalti
+F(x,y) = w1*Populasi + w2*AksesJalan + w3*Fasilitas + w4*Kompetitor - Penalti
 
 Mendukung:
 - Normalisasi fitur dalam rentang [0, 1]
@@ -63,7 +63,6 @@ class FitnessEvaluator:
         self.w_road = float(weights.get("w2_akses_jalan", 0.25))
         self.w_fac = float(weights.get("w3_fasilitas", 0.20))
         self.w_comp = float(weights.get("w4_kompetitor", 0.20))
-        self.w_cost = float(weights.get("w5_biaya_lahan", 0.15))
 
         # Ekstraksi parameter kriteria
         params = config.get("fitness_params", {})
@@ -71,10 +70,6 @@ class FitnessEvaluator:
         self.sigma_road = float(params.get("sigma_jalan", 150.0))
         self.sigma_fac = float(params.get("sigma_fasilitas", 200.0))
         self.comp_d_opt = float(params.get("competitor_d_opt", 350.0))
-
-        self.cost_center_x = float(params.get("land_cost_center_x", self.map.width / 2.0))
-        self.cost_center_y = float(params.get("land_cost_center_y", self.map.height / 2.0))
-        self.cost_sigma = float(params.get("land_cost_sigma", 600.0))
 
         self.penalty_forbidden = float(params.get("penalty_forbidden", 1000.0))
         self.penalty_out_of_bounds = float(params.get("penalty_out_of_bounds", 1000.0))
@@ -192,14 +187,7 @@ class FitnessEvaluator:
             s_comp = 0.8
             d_comp_min = 9999.0
 
-        # 7. Fitur Biaya Lahan: Tertinggi di simpang arteri & pasar desa, murah di kawasan hauling
-        d_arteri = (x - 1150.0) ** 2 + (y - 800.0) ** 2
-        d_pasar = (x - 560.0) ** 2 + (y - 860.0) ** 2
-        f_arteri = np.exp(-d_arteri / (2.0 * (280.0 ** 2)))
-        f_pasar = np.exp(-d_pasar / (2.0 * (220.0 ** 2)))
-        s_cost = float(np.clip(0.65 * f_arteri + 0.35 * f_pasar + 0.10, 0.05, 1.0))
-
-        # 8. Penerapan Opsi Invert per-fitur jika dikonfigurasi
+        # 7. Penerapan Opsi Invert per-fitur jika dikonfigurasi
         if "populasi" in self.invert_features:
             s_pop = 1.0 - s_pop
         if "akses_jalan" in self.invert_features or "kondisi_jalan" in self.invert_features:
@@ -208,8 +196,6 @@ class FitnessEvaluator:
             s_fac = 1.0 - s_fac
         if "kompetitor" in self.invert_features:
             s_comp = 1.0 - s_comp
-        if "biaya_lahan" in self.invert_features:
-            s_cost = 1.0 - s_cost
 
         # Nilai dasar kecocokan lokasi (raw score [0, 1])
         if is_oob or is_forbid:
@@ -222,7 +208,6 @@ class FitnessEvaluator:
                 + self.w_road * s_road
                 + self.w_fac * s_fac
                 + self.w_comp * s_comp
-                - self.w_cost * s_cost
             )
 
         return {
@@ -231,7 +216,6 @@ class FitnessEvaluator:
             "kondisi_jalan": s_road,
             "fasilitas": s_fac,
             "kompetitor": s_comp,
-            "biaya_lahan": s_cost,
             "is_valid": is_valid,
             "is_oob": is_oob,
             "is_forbidden": is_forbid,

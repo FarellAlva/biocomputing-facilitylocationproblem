@@ -14,12 +14,12 @@ Fitur Utama:
    - Slider kecepatan simulasi (delay ms per frame)
    - Pilihan preset peta (Desa Ramai, Hauling Tambang, Campuran)
    - Pilihan mode optimasi ('max' dan 'min_valid')
-   - Slider bobot multi-kriteria w1 - w5 dengan pembaruan live heatmap
+   - Slider bobot multi-kriteria w1 - w4 dengan pembaruan live heatmap
 3. Fitur Interaktif "Ini Apa & Bagaimana?":
    - Tab penjelasan visual komprehensif menjelaskan setiap simbol, warna, dan cara kerja algoritma
    - Papan skor (Scoreboard) live pembanding metrik GA vs PSO
    - Fitur Inspeksi Titik: klik titik manapun pada peta untuk melihat koordinat, status legalitas,
-     serta rincian nilai 5 kriteria pembentuk fitness!
+     serta rincian nilai 4 kriteria pembentuk fitness!
 
 Jalankan dengan:
     python app_tkinter.py
@@ -88,7 +88,6 @@ class FacilityLocationTkApp:
         self.w2_var = tk.DoubleVar(value=self.config.get("fitness_weights", {}).get("w2_akses_jalan", 0.25))
         self.w3_var = tk.DoubleVar(value=self.config.get("fitness_weights", {}).get("w3_fasilitas", 0.20))
         self.w4_var = tk.DoubleVar(value=self.config.get("fitness_weights", {}).get("w4_kompetitor", 0.20))
-        self.w5_var = tk.DoubleVar(value=self.config.get("fitness_weights", {}).get("w5_biaya_lahan", 0.15))
 
         # Status playback simulasi
         self.is_running = False
@@ -375,7 +374,7 @@ class FacilityLocationTkApp:
         self.lbl_speed_val.pack(anchor="e")
         speed_slider.bind("<Motion>", lambda e: self.lbl_speed_val.config(text=f"{int(self.speed_var.get())} ms"))
 
-        # 3. Slider Bobot Multi-Kriteria (w1 - w5)
+        # 3. Slider Bobot Multi-Kriteria (w1 - w4)
         grp_weights = ttk.LabelFrame(scroll_content, text=" ⚖️ Bobot Kriteria Fitness (Fungsi Tujuan) ", padding=8)
         grp_weights.pack(fill=tk.X, pady=6)
 
@@ -383,7 +382,6 @@ class FacilityLocationTkApp:
         self._create_weight_slider(grp_weights, "w2 Kondisi Jalan (Proper vs Lumpur)", self.w2_var, "#f59e0b")
         self._create_weight_slider(grp_weights, "w3 Sinergi Fasilitas Umum", self.w3_var, "#6366f1")
         self._create_weight_slider(grp_weights, "w4 Pengaruh Kompetitor", self.w4_var, "#ec4899")
-        self._create_weight_slider(grp_weights, "w5 Biaya Sewa/Lahan (-)", self.w5_var, "#ef4444")
 
         ttk.Button(
             grp_weights,
@@ -555,7 +553,7 @@ class FacilityLocationTkApp:
             ("🗺️ Warna Latar Heatmap", 
              "• HIJAU PEKAT: Lokasi bernilai fitness tinggi (potensi pasar & akses jalan prima).\n"
              "• KUNING-ORANYE: Lokasi bernilai sedang.\n"
-             "• MERAH: Lokasi bernilai buruk (jauh dari jalan/pemukiman atau biaya lahan tinggi).\n"
+             "• MERAH: Lokasi bernilai buruk (jauh dari jalan atau pemukiman warga).\n"
              "• PUTIH BERGARIS PUTUS-PUTUS: Zona Terlarang (Sungai, Sawah, Tambang, Hutan). Titik di sini dikenakan penalti -1000."),
             
             ("🧬 Elemen Visual GA (Kiri)",
@@ -671,15 +669,14 @@ class FacilityLocationTkApp:
         )
         self.lbl_inspect_comp_status.pack(anchor="w", pady=1)
 
-        # Kartu Nilai 5 Kriteria
-        card_features = ttk.LabelFrame(scroll_content, text=" 🔬 Rincian Nilai 5 Fitur [0, 1] ", padding=8)
+        # Kartu Nilai 4 Kriteria
+        card_features = ttk.LabelFrame(scroll_content, text=" 🔬 Rincian Nilai 4 Fitur [0, 1] ", padding=8)
         card_features.pack(fill=tk.X, pady=4)
 
         self.prog_pop, self.lbl_pop_val = self._create_inspect_bar(card_features, "Populasi Pemukiman:", "#10b981")
         self.prog_road, self.lbl_road_val = self._create_inspect_bar(card_features, "Kondisi Jalan (Proper vs Lumpur):", "#f59e0b")
         self.prog_fac, self.lbl_fac_val = self._create_inspect_bar(card_features, "Tarikan Fasilitas Umum:", "#6366f1")
         self.prog_comp, self.lbl_comp_val = self._create_inspect_bar(card_features, "Faktor Kompetitor (Ricker):", "#ec4899")
-        self.prog_cost, self.lbl_cost_val = self._create_inspect_bar(card_features, "Biaya Lahan/Sewa (-):", "#ef4444")
 
         # Catatan Analisis Spasial
         card_notes = ttk.LabelFrame(scroll_content, text=" 📝 Analisis Spasial & Rekomendasi ", padding=6)
@@ -735,7 +732,6 @@ class FacilityLocationTkApp:
             "w2_akses_jalan": self.w2_var.get(),
             "w3_fasilitas": self.w3_var.get(),
             "w4_kompetitor": self.w4_var.get(),
-            "w5_biaya_lahan": self.w5_var.get(),
         }
         num_stores = self.stores_var.get()
         cfg_copy["facility"]["num_stores"] = num_stores
@@ -1246,7 +1242,7 @@ class FacilityLocationTkApp:
                 foreground="#64748b"
             )
 
-        # 4. Update Nilai 5 Kriteria (Selalu ditampilkan dengan data riil)
+        # 4. Update Nilai 4 Kriteria (Selalu ditampilkan dengan data riil)
         self.prog_pop["value"] = res["populasi"]
         self.lbl_pop_val.config(text=f"{res['populasi']:.2f}")
 
@@ -1258,9 +1254,6 @@ class FacilityLocationTkApp:
 
         self.prog_comp["value"] = res["kompetitor"]
         self.lbl_comp_val.config(text=f"{res['kompetitor']:.2f}")
-
-        self.prog_cost["value"] = res["biaya_lahan"]
-        self.lbl_cost_val.config(text=f"{res['biaya_lahan']:.2f}")
 
         # 5. Catatan Spasial Terpadu
         notes = []
