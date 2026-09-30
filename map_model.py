@@ -344,247 +344,476 @@ def plot_map(
     heatmap_grid: Optional[np.ndarray] = None,
     heatmap_extent: Optional[Tuple[float, float, float, float]] = None,
     heatmap_cmap: str = "viridis",
-    heatmap_alpha: float = 0.55,
+    heatmap_alpha: float = 0.50,
+    show_banner: Optional[bool] = None,
 ):
     """
-    Fungsi visualisasi peta menggunakan Matplotlib sesuai diagram referensi visual:
+    Fungsi visualisasi peta kartografis realistis dan terilustrasi tinggi
+    menggunakan Matplotlib sesuai diagram referensi visual:
     'Peta Studi: Desa, Jalan Lintas, dan Kawasan Hauling'.
-    Legenda ditempatkan di bawah sumbu peta agar tidak tumpang tindih.
+    Menyajikan lanskap pedesaan hijau, sawah berpetak, hutan berkanopi awan,
+    sungai berliku dengan jembatan beton, jalan hauling tanah merah dengan truk tambang kuning,
+    serta terasering tambang terbuka (open pit) dan stockpile batubara.
     """
+    import math
     import matplotlib.pyplot as plt
     import matplotlib.patches as patches
+    import matplotlib.lines as lines
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=(10.5, 7.8))
+        fig, ax = plt.subplots(figsize=(14.0, 10.2), dpi=150)
 
-    # 1. Warna Latar Dasar Wilayah (Pedesaan Hijau di Barat, Kawasan Tambang Pasir Hangat di Timur)
+    if show_banner is None:
+        show_banner = show_legend
+
     is_study_map = "Desa" in map_model.name or "Studi" in map_model.name or "Hauling" in map_model.name
-    if is_study_map:
-        ax.add_patch(patches.Rectangle((0, 0), 1150, map_model.height, facecolor="#f1f8ed", edgecolor="none", zorder=0))
-        ax.add_patch(patches.Rectangle((1150, 0), map_model.width - 1150, map_model.height, facecolor="#faefe3", edgecolor="none", zorder=0))
 
-    # 2. Tampilkan Heatmap jika diminta
+    # ----------------------------------------------------
+    # 1. LATAR BELAKANG WILAYAH (TERRAIN BACKDROP)
+    # ----------------------------------------------------
+    if is_study_map:
+        # Sisi Barat: Padang rumput hijau subur (#cfe8a9 / #d4eab3)
+        ax.add_patch(patches.Rectangle((0, 0), 1150, map_model.height, facecolor="#cfe8a9", edgecolor="none", zorder=0))
+        # Gradasi/variasi lembut padang rumput
+        ax.add_patch(patches.Polygon([[0, 800], [500, 1100], [700, 700], [0, 500]], closed=True, facecolor="#c7e39f", edgecolor="none", alpha=0.5, zorder=0))
+        ax.add_patch(patches.Polygon([[400, 0], [900, 300], [1150, 200], [1150, 0]], closed=True, facecolor="#c4e199", edgecolor="none", alpha=0.4, zorder=0))
+
+        # Sisi Timur: Lahan tambang & tanah liat/pasir hangat (#e6c8a2 / #dfbe95)
+        ax.add_patch(patches.Rectangle((1150, 0), map_model.width - 1150, map_model.height, facecolor="#e6c8a2", edgecolor="none", zorder=0))
+        ax.add_patch(patches.Polygon([[1150, 600], [1600, 800], [1800, 400], [1150, 300]], closed=True, facecolor="#deb68b", edgecolor="none", alpha=0.45, zorder=0))
+
+        # Pepohonan / Semak Hiasan Tersebar di Padang Pedesaan
+        tree_clump_centers = [
+            (140, 1040), (230, 1020), (380, 1120), (510, 1160), (630, 1220), (680, 1050),
+            (450, 410), (530, 440), (650, 310), (620, 160), (680, 80), (320, 560), (430, 580),
+            (710, 1340), (730, 1200), (715, 1080), (840, 1380), (870, 1180), (950, 1300),
+            (920, 1050), (960, 900), (940, 650), (910, 400), (980, 250), (890, 120)
+        ]
+        for tx, ty in tree_clump_centers:
+            # Bayangan lembut pohon
+            ax.add_patch(patches.Ellipse((tx + 2, ty - 3), 32, 20, facecolor="#b2d488", edgecolor="none", alpha=0.6, zorder=1))
+            # Lingkaran tajuk pohon bertumpuk
+            offsets = [(-8, -3, 13, "#2d5a27"), (8, -2, 14, "#387d3a"), (0, 6, 15, "#439247"), (-2, 2, 11, "#4cae50")]
+            for ox, oy, r, col in offsets:
+                ax.add_patch(patches.Circle((tx + ox, ty + oy), r, facecolor=col, edgecolor="#20461b", linewidth=0.5, zorder=1.1))
+
+        # Bebatuan / Semak Gersang Tersebar di Sisi Tambang
+        arid_clumps = [
+            (1280, 1320), (1360, 1120), (1440, 1260), (1530, 1360),
+            (1310, 420), (1390, 260), (1580, 220), (1420, 650),
+            (1260, 950), (1320, 890), (1240, 680), (1280, 520), (1220, 180),
+            (1720, 1450), (1750, 1280), (1740, 960), (1680, 780), (1650, 480)
+        ]
+        for ax_c, ay_c in arid_clumps:
+            ax.add_patch(patches.Ellipse((ax_c + 2, ay_c - 2), 24, 15, facecolor="#cca67a", edgecolor="none", alpha=0.5, zorder=1))
+            ax.add_patch(patches.Circle((ax_c - 4, ay_c), 8, facecolor="#9e6b40", edgecolor="#7a4e28", linewidth=0.5, zorder=1.1))
+            ax.add_patch(patches.Circle((ax_c + 4, ay_c + 2), 7, facecolor="#b38054", edgecolor="#7a4e28", linewidth=0.5, zorder=1.1))
+            ax.add_patch(patches.Circle((ax_c, ay_c - 3), 6, facecolor="#80512c", edgecolor="#593416", linewidth=0.5, zorder=1.1))
+    else:
+        ax.add_patch(patches.Rectangle((0, 0), map_model.width, map_model.height, facecolor="#f8fafc", edgecolor="none", zorder=0))
+
+    # ----------------------------------------------------
+    # 2. TAMPILKAN HEATMAP JIKA DIMINTA
+    # ----------------------------------------------------
     if show_heatmap and heatmap_grid is not None and heatmap_extent is not None:
-        im = ax.imshow(
+        ax.imshow(
             heatmap_grid,
             origin="lower",
             extent=heatmap_extent,
             cmap=heatmap_cmap,
             alpha=heatmap_alpha,
             aspect="auto",
-            zorder=1,
+            zorder=1.5,
         )
 
-    # 3. Gambar Zona Terlarang
-    color_map_zone = {
-        "sungai": ("#38bdf8", "#0284c7", 0.90, "Sungai"),
-        "sawah": ("#b7e4c7", "#74c69d", 0.85, "Sawah"),
-        "hutan": ("#2d6a4f", "#1b4332", 0.85, "Hutan"),
-        "lahan_tambang": ("#b08968", "#78350f", 0.85, "Tambang"),
-    }
-    drawn_zone_labels = set()
+    # ----------------------------------------------------
+    # 3. ZONA TERLARANG (FOREST, PADDY, RIVER, MINES)
+    # ----------------------------------------------------
+    # 3A. HUTAN LINDUNG (NW) DENGAN KANOPI REALISTIS
+    hutan_zone = next((z for z in map_model.forbidden_zones if z.get("type") == "hutan"), None)
+    if hutan_zone is not None:
+        poly_pts = hutan_zone["polygon"]
+        ax.add_patch(patches.Polygon(poly_pts, closed=True, facecolor="#235327", edgecolor="#183f1d", linewidth=1.5, zorder=2))
 
-    for zone in map_model.forbidden_zones:
-        poly_pts = zone["polygon"]
-        ztype = zone.get("type", "zona")
-        fcolor, ecolor, alpha_val, default_label = color_map_zone.get(
-            ztype, ("#ff7f7f", "#b91c1c", 0.7, "Zona Terlarang")
-        )
-        label = default_label if default_label not in drawn_zone_labels else None
-        if label:
-            drawn_zone_labels.add(default_label)
+        if is_study_map:
+            # Lapisan tajuk-tajuk pohon rimbun berkubah
+            rng = np.random.RandomState(101)
+            gx_vals = np.linspace(20, 730, 26)
+            gy_vals = np.linspace(1100, 1490, 15)
+            canopy_colors = ["#183f1d", "#235327", "#2e6a32", "#3b853e", "#499f4d", "#1f4b23", "#347a38"]
+            for gx in gx_vals:
+                for gy in gy_vals:
+                    jx = gx + rng.uniform(-14, 14)
+                    jy = gy + rng.uniform(-14, 14)
+                    if jx < 750 and jy > 1070:
+                        cr = rng.uniform(32, 52)
+                        ccol = canopy_colors[rng.randint(0, len(canopy_colors))]
+                        ax.add_patch(patches.Circle((jx, jy), cr, facecolor=ccol, edgecolor="#143618", linewidth=0.6, alpha=0.95, zorder=2.1))
+                        ax.add_patch(patches.Circle((jx - cr * 0.22, jy + cr * 0.22), cr * 0.55, facecolor="#57b85c", edgecolor="none", alpha=0.25, zorder=2.2))
 
-        poly_patch = patches.Polygon(
-            poly_pts,
-            closed=True,
-            facecolor=fcolor,
-            edgecolor=ecolor,
-            linestyle="--" if ztype == "lahan_tambang" else "-",
-            linewidth=1.2,
-            alpha=alpha_val,
-            zorder=2,
-            label=label,
-        )
-        ax.add_patch(poly_patch)
+            for ex in np.linspace(15, 745, 28):
+                er = rng.uniform(34, 48)
+                ecol = rng.choice(["#235327", "#2e6a32", "#3b853e"])
+                ax.add_patch(patches.Circle((ex, 1080), er, facecolor=ecol, edgecolor="#183f1d", linewidth=0.7, zorder=2.3))
 
-        # Pola kisi sawah
-        if ztype == "sawah" and is_study_map:
-            for gx in range(60, 640, 60):
-                ax.plot([gx, gx], [0, 520], color="#74c69d", lw=0.6, alpha=0.45, zorder=2)
-            for gy in range(50, 520, 50):
-                ax.plot([0, 640], [gy, gy], color="#74c69d", lw=0.6, alpha=0.45, zorder=2)
+            for ey in np.linspace(1080, 1500, 18):
+                er = rng.uniform(34, 48)
+                ecol = rng.choice(["#235327", "#2e6a32", "#3b853e"])
+                ax.add_patch(patches.Circle((740, ey), er, facecolor=ecol, edgecolor="#183f1d", linewidth=0.7, zorder=2.3))
 
-    # Lingkaran Dotted Permukiman Warga
+    # 3B. SAWAH (SW) DENGAN KISI-KISI PETAK PERTANIAN
+    sawah_zone = next((z for z in map_model.forbidden_zones if z.get("type") == "sawah"), None)
+    if sawah_zone is not None:
+        poly_pts = sawah_zone["polygon"]
+        ax.add_patch(patches.Polygon(poly_pts, closed=True, facecolor="#8ebf4b", edgecolor="#5e842f", linewidth=1.5, zorder=2))
+
+        if is_study_map:
+            x_cuts = [0, 85, 175, 270, 365, 460, 550, 640]
+            y_cuts = [0, 85, 170, 255, 345, 430, 520]
+            paddy_palette = [
+                "#a3c959", "#8ebf4b", "#b8d96e", "#9bbe47", "#c8dd7b",
+                "#7fa73d", "#92bd44", "#a9cc5f", "#bcdb72", "#a6cb58"
+            ]
+            p_idx = 0
+            for i in range(len(x_cuts) - 1):
+                for j in range(len(y_cuts) - 1):
+                    x0, x1 = x_cuts[i], x_cuts[i + 1]
+                    y0, y1 = y_cuts[j], y_cuts[j + 1]
+                    col = paddy_palette[(p_idx * 7 + (i * 3 + j * 5)) % len(paddy_palette)]
+                    p_idx += 1
+                    ax.add_patch(patches.Rectangle((x0, y0), x1 - x0, y1 - y0, facecolor=col, edgecolor="#5c822e", linewidth=1.2, zorder=2.1))
+                    if (i + j) % 2 == 0:
+                        for row_y in np.linspace(y0 + 15, y1 - 15, 3):
+                            ax.plot([x0 + 8, x1 - 8], [row_y, row_y], color="#6f9338", linewidth=0.6, alpha=0.45, zorder=2.2)
+                    else:
+                        for col_x in np.linspace(x0 + 15, x1 - 15, 3):
+                            ax.plot([col_x, col_x], [y0 + 8, y1 - 8], color="#6f9338", linewidth=0.6, alpha=0.45, zorder=2.2)
+
+    # 3C. SUNGAI UTAMA (MEANDERING RIVER)
+    sungai_zone = next((z for z in map_model.forbidden_zones if z.get("type") == "sungai"), None)
+    if sungai_zone is not None:
+        poly_pts = sungai_zone["polygon"]
+        ax.add_patch(patches.Polygon(poly_pts, closed=True, facecolor="#3ea4e8", edgecolor="#1a71b3", linewidth=2.2, zorder=2.5))
+
+        if is_study_map:
+            river_mid_pts = [
+                (795, 1500), (765, 1150), (795, 900), (825, 750),
+                (810, 500), (765, 250), (710, 0)
+            ]
+            rmp = np.array(river_mid_pts)
+            ax.plot(rmp[:, 0], rmp[:, 1], color="#75c8f9", linewidth=2.0, alpha=0.7, zorder=2.6)
+            ax.plot(rmp[:, 0] - 14, rmp[:, 1], color="#ffffff", linewidth=1.1, alpha=0.5, linestyle=(0, (8, 12)), zorder=2.6)
+            ax.plot(rmp[:, 0] + 14, rmp[:, 1], color="#ffffff", linewidth=1.1, alpha=0.5, linestyle=(0, (8, 12)), zorder=2.6)
+
+    # 3D. LAHAN TAMBANG AKTIF (OPEN PIT TERRACES)
     if is_study_map:
+        pit_center = (1860, 640)
+        pit_steps = [
+            (270, 210, "#d9a67a", "#aa7044"),
+            (225, 175, "#c59163", "#945930"),
+            (180, 140, "#ab7243", "#7d421d"),
+            (135, 105, "#92522c", "#652f11"),
+            (95, 75, "#753c18", "#4e210a"),
+            (60, 45, "#54250c", "#381504"),
+        ]
+        for w, h, fcol, ecol in pit_steps:
+            ax.add_patch(patches.Ellipse(pit_center, w, h, angle=-10, facecolor=fcol, edgecolor=ecol, linewidth=1.2, zorder=2.1))
+        # Jalan spiral akses tambang menurun
+        spiral_pts = [
+            (1730, 600), (1790, 710), (1920, 710), (1960, 620), (1910, 560),
+            (1820, 570), (1800, 650), (1890, 660), (1880, 620), (1860, 630)
+        ]
+        sp = np.array(spiral_pts)
+        ax.plot(sp[:, 0], sp[:, 1], color="#bf8354", linewidth=3.0, zorder=2.2)
+        ax.plot(sp[:, 0], sp[:, 1], color="#5c2b0d", linewidth=0.9, linestyle="--", zorder=2.3)
+
+    # 3E. AREA TIMBUNAN BATUBARA (STOCKPILE)
+    if is_study_map:
+        sp_center = (1830, 210)
+        sp_steps = [
+            (290, 170, "#8d6e63", "#5d4037"),
+            (230, 130, "#6d4c41", "#4e342e"),
+            (170, 95, "#4e342e", "#3e2723"),
+            (110, 60, "#2d1c16", "#1a0f0b"),
+        ]
+        for w, h, fcol, ecol in sp_steps:
+            ax.add_patch(patches.Ellipse(sp_center, w, h, angle=5, facecolor=fcol, edgecolor=ecol, linewidth=1.2, zorder=2.1))
+
+    # 3F. FASILITAS MESS TAMBANG & BENGKEL ALAT BERAT
+    if is_study_map:
+        # Barak Mess Tambang (Bangunan Atap Biru)
+        mess_coords = [
+            (1820, 1340), (1860, 1340), (1900, 1340),
+            (1820, 1300), (1860, 1300), (1900, 1300),
+            (1820, 1260), (1860, 1260), (1900, 1260),
+        ]
+        for mx, my in mess_coords:
+            ax.add_patch(patches.Rectangle((mx - 15, my - 10), 30, 20, facecolor="#cca67a", edgecolor="none", zorder=3.8))
+            ax.add_patch(patches.Rectangle((mx - 16, my - 9), 32, 18, facecolor="#2980b9", edgecolor="#1a5276", linewidth=0.8, zorder=4.0))
+            ax.plot([mx - 16, mx + 16], [my, my], color="#aed6f1", linewidth=0.8, zorder=4.1)
+
+        # Bengkel Alat Berat (Hanggar Besar)
+        bx, by = 1780, 1080
+        ax.add_patch(patches.Rectangle((bx - 30, by - 22), 60, 44, facecolor="#78909c", edgecolor="#455a64", linewidth=1.2, zorder=4.0))
+        ax.add_patch(patches.Rectangle((bx - 20, by - 22), 40, 16, facecolor="#37474f", edgecolor="none", zorder=4.1))
+        ax.plot([bx - 30, bx + 30], [by, by], color="#b0bec5", linewidth=1.2, zorder=4.2)
+        # Lencana Bengkel Alat Berat (Lingkaran Emas dengan Ikon Kunci Pas Silang)
+        ax.add_patch(patches.Circle((bx - 34, by + 18), 16, facecolor="#f39c12", edgecolor="#ffffff", linewidth=1.5, zorder=6.8))
+        ax.plot([bx - 40, bx - 28], [by + 12, by + 24], color="#ffffff", linewidth=2.4, solid_capstyle="round", zorder=6.9)
+        ax.plot([bx - 28, bx - 40], [by + 12, by + 24], color="#ffffff", linewidth=2.4, solid_capstyle="round", zorder=6.9)
+        ax.add_patch(patches.Circle((bx - 34, by + 18), 4, facecolor="#f39c12", edgecolor="#ffffff", linewidth=1.2, zorder=7.0))
+
+    # ----------------------------------------------------
+    # 4. PERMUKIMAN WARGA (SETTLEMENT) & RUMAH ILUSTRASI
+    # ----------------------------------------------------
+    if is_study_map:
+        # Lingkaran Dotted Permukiman Warga (Glow Biru Lembut)
         ellipse = patches.Ellipse(
-            (290, 780), width=480, height=420,
-            facecolor="#e2f3e5", edgecolor="#0284c7",
-            linestyle="--", linewidth=1.5, alpha=0.6, zorder=3,
-            label="Permukiman warga"
+            (280, 765), width=490, height=430,
+            facecolor="#dcf0fd", edgecolor="#258cdb",
+            linestyle="--", linewidth=1.8, alpha=0.35, zorder=3,
         )
         ax.add_patch(ellipse)
 
-    # 4. Gambar Jalan sesuai kelasnya
-    drawn_road_labels = set()
+    # RUMAH-RUMAH WARGA TERILUSTRASI (Terracotta Cottages)
+    if len(map_model.houses) > 0:
+        for h in map_model.houses:
+            hx, hy = h[0], h[1]
+            w, h_dim = 24, 16
+            ax.add_patch(patches.Rectangle((hx - w/2 + 2, hy - h_dim/2 - 2), w, h_dim, facecolor="#b4d588" if is_study_map else "#cbd5e1", edgecolor="none", alpha=0.7, zorder=3.8))
+            ax.add_patch(patches.Rectangle((hx - w/2, hy - h_dim/2), w, h_dim * 0.65, facecolor="#f8fafc", edgecolor="#94a3b8", linewidth=0.5, zorder=3.9))
+            ax.add_patch(patches.Rectangle((hx - 2.5, hy - h_dim/2), 5, 5, facecolor="#64748b", edgecolor="none", zorder=3.95))
+            ax.add_patch(patches.Rectangle((hx - 8, hy - h_dim/2 + 2), 3.5, 3.5, facecolor="#38bdf8", edgecolor="#64748b", linewidth=0.4, zorder=3.95))
+
+            roof_palette = [("#e67e22", "#c0392b"), ("#d35400", "#a93226"), ("#e74c3c", "#922b21")]
+            c_light, c_dark = roof_palette[int(hx + hy) % len(roof_palette)]
+            poly_roof_l = [[hx - w/2 - 2, hy - 1], [hx, hy + h_dim/2], [hx, hy - 1]]
+            ax.add_patch(patches.Polygon(poly_roof_l, closed=True, facecolor=c_light, edgecolor="#922b21", linewidth=0.5, zorder=4.0))
+            poly_roof_r = [[hx + w/2 + 2, hy - 1], [hx, hy + h_dim/2], [hx, hy - 1]]
+            ax.add_patch(patches.Polygon(poly_roof_r, closed=True, facecolor=c_dark, edgecolor="#922b21", linewidth=0.5, zorder=4.0))
+            ax.plot([hx, hx], [hy - 1, hy + h_dim/2], color="#ffffff", linewidth=0.8, zorder=4.1)
+
+    # ----------------------------------------------------
+    # 5. JARINGAN JALAN & JEMBATAN
+    # ----------------------------------------------------
+    # 5A. JEMBATAN PADA SUNGAI (Jl. Utama Desa menyeberang sungai)
+    if is_study_map:
+        ax.add_patch(patches.Rectangle((750, 792), 100, 26, facecolor="#94a3b8", edgecolor="#334155", linewidth=1.5, zorder=4.2))
+        ax.plot([750, 850], [805 + 13, 805 + 13], color="#1e293b", linewidth=2.5, zorder=4.3)
+        ax.plot([750, 850], [805 - 13, 805 - 13], color="#1e293b", linewidth=2.5, zorder=4.3)
+
+    # 5B. GAMBAR JALAN BERDASARKAN KELAS
     for road in map_model.roads_raw:
         pts = np.array(road.get("points", []), dtype=np.float64)
         r_class = road.get("class", "lokal")
-        r_name = road.get("name", "Jalan")
 
         if r_class == "arteri":
-            # 4 lajur gelap dengan marka putus-putus putih
-            lbl = "Jalan arteri" if "Jalan arteri" not in drawn_road_labels else None
-            drawn_road_labels.add("Jalan arteri")
-            ax.plot(pts[:, 0], pts[:, 1], color="#1e293b", linewidth=6.5, zorder=4, label=lbl)
-            ax.plot(pts[:, 0], pts[:, 1], color="#ffffff", linewidth=1.1, linestyle="--", zorder=5)
+            # JL. LINTAS PROVINSI (4 Lajur Aspal Gelap)
+            ax.plot(pts[:, 0], pts[:, 1], color="#202428", linewidth=13.0, solid_capstyle="butt", zorder=4.5)
+            ax.plot(pts[:, 0], pts[:, 1], color="#33383e", linewidth=10.5, solid_capstyle="butt", zorder=4.6)
+            ax.plot(pts[:, 0] - 8, pts[:, 1], color="#e2e8f0", linewidth=1.2, zorder=4.7)
+            ax.plot(pts[:, 0] + 8, pts[:, 1], color="#e2e8f0", linewidth=1.2, zorder=4.7)
+            ax.plot(pts[:, 0], pts[:, 1], color="#ffffff", linewidth=1.8, linestyle=(0, (6, 6)), zorder=4.8)
+
         elif r_class == "hauling":
-            # Jalur tambang lebar dengan jejak debu
-            lbl = "Jalan hauling" if "Jalan hauling" not in drawn_road_labels else None
-            drawn_road_labels.add("Jalan hauling")
-            ax.plot(pts[:, 0], pts[:, 1], color="#a3704c", linewidth=6.0, zorder=4, label=lbl)
-            ax.plot(pts[:, 0], pts[:, 1], color="#c99d75", linewidth=2.5, linestyle=":", zorder=5)
+            # JALAN HAULING (Jalur Lebar Tanah Merah / Clay dengan Jejak Ban Truk)
+            ax.plot(pts[:, 0], pts[:, 1], color="#dfaa85", linewidth=18.0, alpha=0.45, solid_capstyle="round", zorder=4.4)
+            ax.plot(pts[:, 0], pts[:, 1], color="#bf7952", linewidth=13.5, solid_capstyle="round", zorder=4.5)
+            ax.plot(pts[:, 0] - 3.0, pts[:, 1], color="#8a4928", linewidth=1.6, linestyle="-", zorder=4.6)
+            ax.plot(pts[:, 0] + 3.0, pts[:, 1], color="#8a4928", linewidth=1.6, linestyle="-", zorder=4.6)
+
         elif r_class == "kolektor":
-            lbl = "Jalan kolektor" if "Jalan kolektor" not in drawn_road_labels else None
-            drawn_road_labels.add("Jalan kolektor")
-            ax.plot(pts[:, 0], pts[:, 1], color="#ea580c", linewidth=3.0, zorder=4, label=lbl)
+            # JALAN KOLEKTOR (Jl. Utama Desa, Jl. Akses Tambang)
+            ax.plot(pts[:, 0], pts[:, 1], color="#64748b", linewidth=7.2, solid_capstyle="round", zorder=4.4)
+            ax.plot(pts[:, 0], pts[:, 1], color="#8a95a5", linewidth=5.2, solid_capstyle="round", zorder=4.5)
+
         else:
-            lbl = "Jalan lokal" if "Jalan lokal" not in drawn_road_labels else None
-            drawn_road_labels.add("Jalan lokal")
-            ax.plot(pts[:, 0], pts[:, 1], color="#64748b", linewidth=1.8, zorder=4, label=lbl)
+            # JALAN LOKAL
+            ax.plot(pts[:, 0], pts[:, 1], color="#94a3b8", linewidth=4.8, solid_capstyle="round", zorder=4.4)
+            ax.plot(pts[:, 0], pts[:, 1], color="#cbd5e1", linewidth=3.4, solid_capstyle="round", zorder=4.5)
 
-    # 5. Gambar Rumah / Pemukiman (Atap Merah)
-    if len(map_model.houses) > 0:
-        ax.scatter(
-            map_model.houses[:, 0],
-            map_model.houses[:, 1],
-            s=22,
-            c="#e11d48",
-            alpha=0.65,
-            marker="s",
-            edgecolors="#9f1239",
-            linewidths=0.5,
-            zorder=6,
-            label="Rumah",
-        )
+    # 5C. TRUK TAMBANG KUNING REALISTIS DI JALAN HAULING (DUMP TRUCKS)
+    if is_study_map:
+        truck_positions = [
+            (1655, 1320, -100),
+            (1615, 1050, -105),
+            (1590, 840, -100),
+            (1545, 630, -102),
+            (1495, 340, -100),
+            (1460, 120, -100),
+        ]
+        for tx, ty, rot_deg in truck_positions:
+            rad = math.radians(rot_deg)
+            cos_r, sin_r = math.cos(rad), math.sin(rad)
+            wheel_w, wheel_h = 8, 4.5
 
-    # 6. Gambar Fasilitas Umum (Dengan Ikon Huruf S, P, R, B, M)
+            def rot(dx, dy):
+                return (tx + dx * cos_r - dy * sin_r, ty + dx * sin_r + dy * cos_r)
+
+            for wdx, wdy in [(-11, -9), (-11, 9), (11, -9), (11, 9)]:
+                wx, wy = rot(wdx, wdy)
+                ax.add_patch(patches.Rectangle((wx - wheel_w/2, wy - wheel_h/2), wheel_w, wheel_h, facecolor="#1e293b", edgecolor="#0f172a", linewidth=0.5, zorder=5.0))
+
+            dump_pts = [rot(-14, -8), rot(7, -8), rot(7, 8), rot(-14, 8)]
+            ax.add_patch(patches.Polygon(dump_pts, closed=True, facecolor="#f1c40f", edgecolor="#b7950b", linewidth=0.8, zorder=5.1))
+            load_pts = [rot(-12, -6), rot(5, -6), rot(5, 6), rot(-12, 6)]
+            ax.add_patch(patches.Polygon(load_pts, closed=True, facecolor="#3e2723", edgecolor="none", zorder=5.2))
+
+            cab_pts = [rot(7, -7), rot(15, -7), rot(15, 7), rot(7, 7)]
+            ax.add_patch(patches.Polygon(cab_pts, closed=True, facecolor="#f39c12", edgecolor="#b7950b", linewidth=0.8, zorder=5.3))
+            windshield = [rot(9, -5), rot(14, -5), rot(14, 5), rot(9, 5)]
+            ax.add_patch(patches.Polygon(windshield, closed=True, facecolor="#2c3e50", edgecolor="none", zorder=5.4))
+
+    # ----------------------------------------------------
+    # 6. FASILITAS UMUM (LINGKARAN BADGE BERIKON)
+    # ----------------------------------------------------
     facility_markers = {
-        "sekolah": ("#1d4ed8", "S", 100, "Sekolah"),
-        "pasar": ("#16a34a", "P", 110, "Pasar"),
-        "restoran": ("#ea580c", "R", 95, "Restoran / Warung"),
-        "bengkel": ("#9333ea", "B", 100, "Bengkel"),
-        "masjid_kantor": ("#059669", "M", 105, "Masjid"),
+        "sekolah": ("#1d4ed8", "S", 135),
+        "pasar": ("#16a34a", "P", 145),
+        "restoran": ("#ea580c", "R", 130),
+        "bengkel": ("#9333ea", "B", 135),
+        "masjid_kantor": ("#059669", "M", 155),
     }
-    drawn_fac_labels = set()
 
     for fac in map_model.facilities_raw:
         ftype = fac.get("type", "fasilitas")
-        color, letter, size, f_label = facility_markers.get(
-            ftype, ("#0284c7", "*", 80, ftype.capitalize())
-        )
-        lbl = f_label if f_label not in drawn_fac_labels else None
-        if lbl:
-            drawn_fac_labels.add(f_label)
+        color, letter, size = facility_markers.get(ftype, ("#0284c7", "*", 95))
+        fx, fy = fac["x"], fac["y"]
 
-        # Gambar lingkaran latar belakang
-        ax.scatter(
-            fac["x"],
-            fac["y"],
-            c=color,
-            marker="o",
-            s=size,
-            edgecolors="#ffffff",
-            linewidths=1.2,
-            zorder=7,
-            label=lbl,
-        )
-        # Gambar huruf di tengah lingkaran
-        ax.text(
-            fac["x"],
-            fac["y"],
-            letter,
-            color="#ffffff",
-            fontsize=7,
-            weight="bold",
-            ha="center",
-            va="center",
-            clip_on=True,
-            zorder=8,
-        )
+        # Bayangan badge
+        ax.scatter(fx + 2, fy - 2, c="#0f172a", marker="o", s=size, alpha=0.35, edgecolors="none", zorder=6.8)
+        # Lingkaran badge utama
+        ax.scatter(fx, fy, c=color, marker="o", s=size, edgecolors="#ffffff", linewidths=2.0, zorder=7.0)
 
-    # 7. Gambar Kompetitor (Minimarket Lama K)
+        if ftype == "masjid_kantor":
+            dome_poly = [
+                [fx - 7, fy - 3], [fx - 5, fy + 4], [fx, fy + 8], [fx + 5, fy + 4], [fx + 7, fy - 3]
+            ]
+            ax.add_patch(patches.Polygon(dome_poly, closed=True, facecolor="#ffffff", edgecolor="none", zorder=7.2))
+            ax.plot([fx, fx], [fy + 8, fy + 11], color="#ffffff", linewidth=1.2, zorder=7.3)
+            ax.text(fx, fy - 1, "M", color="#059669", fontsize=6.5, weight="bold", ha="center", va="center", zorder=7.4)
+        else:
+            ax.text(fx, fy, letter, color="#ffffff", fontsize=9.0, weight="bold", ha="center", va="center", zorder=7.2)
+
+    # ----------------------------------------------------
+    # 7. KOMPETITOR (MINIMARKET LAMA K)
+    # ----------------------------------------------------
     if len(map_model.competitors) > 0:
-        ax.scatter(
-            map_model.competitors[:, 0],
-            map_model.competitors[:, 1],
-            c="#dc2626",
-            marker="o",
-            s=115,
-            edgecolors="#ffffff",
-            linewidths=1.3,
-            zorder=7,
-            label="Minimarket lama",
-        )
-        for i, (cx, cy) in enumerate(map_model.competitors):
-            ax.text(
-                cx,
-                cy,
-                "K",
-                color="#ffffff",
-                fontsize=7.5,
-                weight="bold",
-                ha="center",
-                va="center",
-                clip_on=True,
-                zorder=8,
-            )
+        for cx, cy in map_model.competitors:
+            ax.scatter(cx + 2, cy - 2, c="#0f172a", marker="o", s=150, alpha=0.35, edgecolors="none", zorder=6.8)
+            ax.scatter(cx, cy, c="#dc2626", marker="o", s=150, edgecolors="#ffffff", linewidths=2.2, zorder=7.0)
+            ax.text(cx, cy, "K", color="#ffffff", fontsize=9.5, weight="bold", ha="center", va="center", zorder=7.2)
 
-    # 8. Anotasi Label & Badge Spasial (Peta Studi)
+    # ----------------------------------------------------
+    # 8. LABEL & BADGE PILL SPASIAL SESUAI GAMBAR REFERENSI
+    # ----------------------------------------------------
     if is_study_map:
-        bbox_dark = dict(boxstyle="round,pad=0.25", facecolor="#0f172a", edgecolor="none", alpha=0.82)
-        bbox_white = dict(boxstyle="round,pad=0.25", facecolor="#ffffff", edgecolor="#cbd5e1", lw=1.0, alpha=0.92)
-        bbox_blue = dict(boxstyle="round,pad=0.25", facecolor="#0284c7", edgecolor="none", alpha=0.88)
-        bbox_brown = dict(boxstyle="round,pad=0.25", facecolor="#78350f", edgecolor="none", alpha=0.82)
+        def pill_label(x, y, text, fcol, text_col="#ffffff", font_size=7.5, pad=0.35):
+            ax.text(x + 2, y - 2, text, color="#0f172a", fontsize=font_size, weight="bold", ha="center", va="center",
+                    bbox=dict(boxstyle=f"round,pad={pad}", facecolor="#0f172a", edgecolor="none", alpha=0.3), zorder=6.0)
+            ax.text(x, y, text, color=text_col, fontsize=font_size, weight="bold", ha="center", va="center",
+                    bbox=dict(boxstyle=f"round,pad={pad}", facecolor=fcol, edgecolor="#ffffff", linewidth=0.8, alpha=0.96), zorder=6.2)
 
-        # Label Zona
-        ax.text(90, 1370, "Hutan", color="#ffffff", fontsize=7.5, weight="bold", ha="center", bbox=bbox_dark, clip_on=True, zorder=10)
-        ax.text(110, 260, "Sawah", color="#0f172a", fontsize=7.5, weight="bold", ha="center", bbox=bbox_white, clip_on=True, zorder=10)
-        ax.text(800, 360, "Sungai", color="#ffffff", fontsize=7.5, weight="bold", ha="center", bbox=bbox_blue, clip_on=True, zorder=10)
-        ax.text(200, 1005, "Permukiman warga", color="#ffffff", fontsize=7, weight="bold", ha="center", bbox=bbox_blue, clip_on=True, zorder=10)
+        # Label Wilayah / Zona
+        pill_label(90, 1370, "Hutan", "#143818", pad=0.4, font_size=8.5)
+        pill_label(110, 260, "Sawah", "#244517", pad=0.4, font_size=8.5)
+        pill_label(815, 480, "Sungai", "#1565c0", pad=0.4, font_size=8.5)
+        pill_label(135, 1025, "Permukiman warga", "#1565c0", pad=0.4, font_size=8.2)
 
         # Label Jalan
-        ax.text(210, 720, "Jl. Utama Desa", color="#ffffff", fontsize=6.5, weight="bold", bbox=bbox_dark, clip_on=True, zorder=10)
-        ax.text(340, 975, "Jl. Lingkar Timur", color="#ffffff", fontsize=6.5, weight="bold", bbox=bbox_dark, clip_on=True, zorder=10)
-        ax.text(400, 610, "Jl. Dusun Barat", color="#ffffff", fontsize=6.5, weight="bold", bbox=bbox_dark, clip_on=True, zorder=10)
-        ax.text(1150, 1260, "Jl. Lintas Provinsi", color="#ffffff", fontsize=7, weight="bold", ha="center", bbox=bbox_dark, clip_on=True, zorder=10)
-        ax.text(1420, 810, "Jl. Akses Tambang", color="#ffffff", fontsize=6.5, weight="bold", ha="center", bbox=bbox_dark, clip_on=True, zorder=10)
-        ax.text(1640, 1440, "Jalan Hauling", color="#ffffff", fontsize=7, weight="bold", ha="center", bbox=bbox_brown, clip_on=True, zorder=10)
+        pill_label(210, 680, "Jl. Utama Desa", "#1e293b", font_size=7.2)
+        pill_label(335, 1060, "Jl. Lingkar Timur", "#1e293b", font_size=7.2)
+        pill_label(340, 540, "Jl. Dusun Barat", "#1e293b", font_size=7.2)
+        pill_label(1150, 1260, "Jl. Lintas Provinsi", "#1e293b", font_size=8.0)
+        pill_label(1350, 770, "Jl. Akses Tambang", "#1e293b", font_size=7.2)
+        pill_label(1660, 1440, "Jalan Hauling", "#78350f", font_size=8.0)
 
-        # Fasilitas Kawasan Tambang
-        ax.text(1840, 1370, "Mess tambang", color="#ffffff", fontsize=7, weight="bold", ha="center", bbox=bbox_brown, clip_on=True, zorder=10)
-        ax.text(1840, 1140, "Bengkel alat berat", color="#ffffff", fontsize=7, weight="bold", ha="center", bbox=bbox_brown, clip_on=True, zorder=10)
-        ax.text(1820, 620, "Lahan tambang aktif", color="#ffffff", fontsize=7, weight="bold", ha="center", bbox=bbox_dark, clip_on=True, zorder=10)
-        ax.text(1830, 210, "Area timbunan (stockpile)", color="#ffffff", fontsize=7, weight="bold", ha="center", bbox=bbox_dark, clip_on=True, zorder=10)
+        # Label Fasilitas Tambang
+        pill_label(1840, 1375, "Mess tambang", "#78350f", font_size=7.5)
+        pill_label(1850, 1140, "Bengkel alat berat", "#78350f", font_size=7.5)
+        pill_label(1820, 620, "Lahan tambang aktif", "#2c1b12", font_size=8.0)
+        pill_label(1830, 210, "Area timbunan\n(stockpile)", "#2c1b12", font_size=7.2)
 
-    # Format Tampilan & Batas Sumbu
+    # ----------------------------------------------------
+    # 9. BANNER JUDUL TOP HEADER & BATAS SUMBU
+    # ----------------------------------------------------
     ax.set_xlim(0, map_model.width)
     ax.set_ylim(0, map_model.height)
     ax.set_aspect("equal")
-    ax.set_xlabel("Koordinat X (meter)", fontsize=8)
-    ax.set_ylabel("Koordinat Y (meter)", fontsize=8)
-    ax.set_title(title, fontsize=10, weight="bold")
-    ax.grid(True, linestyle=":", alpha=0.4, color="#94a3b8")
 
-    # Legenda ditaruh di BAWAH agar tidak tumpang tindih dengan peta
-    if show_legend:
-        ax.legend(
-            loc="upper center",
-            bbox_to_anchor=(0.5, -0.15),
-            ncol=5,
-            fontsize=7.5,
-            framealpha=0.95,
-            edgecolor="#cbd5e1",
+    # Banner Header Biru Modern seperti di image.png
+    if is_study_map and show_banner:
+        header_text = "Peta Studi: Desa, Jalan Lintas, dan Kawasan Hauling"
+        font_sz = 11.5 if show_legend else 9.5
+        ax.text(
+            25, map_model.height - 35,
+            f" {header_text} ",
+            color="#ffffff",
+            fontsize=font_sz,
+            weight="bold",
+            ha="left",
+            va="top",
+            bbox=dict(boxstyle="round,pad=0.45", facecolor="#163b65", edgecolor="#ffffff", linewidth=1.2, alpha=0.96),
+            zorder=6.5,
         )
 
+    for spine in ax.spines.values():
+        spine.set_color("#64748b")
+        spine.set_linewidth(1.2)
+
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+    # ----------------------------------------------------
+    # 10. LEGENDA BAWAH SEPERTI DI GAMBAR REFERENSI
+    # ----------------------------------------------------
+    if show_legend:
+        legend_elements = [
+            # Ikon Bangunan & Fasilitas
+            patches.Patch(facecolor="#e11d48", edgecolor="#9f1239", label="Rumah"),
+            lines.Line2D([0], [0], marker="o", color="w", markerfacecolor="#1d4ed8", markersize=8.5, label="Sekolah"),
+            lines.Line2D([0], [0], marker="o", color="w", markerfacecolor="#16a34a", markersize=8.5, label="Pasar"),
+            lines.Line2D([0], [0], marker="o", color="w", markerfacecolor="#ea580c", markersize=8.5, label="Restoran / Warung"),
+            lines.Line2D([0], [0], marker="o", color="w", markerfacecolor="#9333ea", markersize=8.5, label="Bengkel"),
+            lines.Line2D([0], [0], marker="o", color="w", markerfacecolor="#dc2626", markersize=8.5, label="Minimarket lama"),
+            # Jalan
+            lines.Line2D([0], [0], color="#94a3b8", lw=3.0, label="Jalan lokal"),
+            lines.Line2D([0], [0], color="#64748b", lw=4.0, label="Jalan kolektor"),
+            lines.Line2D([0], [0], color="#202428", lw=5.0, linestyle="--", label="Jalan arteri"),
+            lines.Line2D([0], [0], color="#bf7952", lw=5.0, label="Jalan hauling"),
+            lines.Line2D([0], [0], color="#258cdb", lw=2.0, linestyle="--", label="Permukiman warga"),
+            # Zona
+            patches.Patch(facecolor="#235327", edgecolor="#143618", label="Hutan"),
+            patches.Patch(facecolor="#8ebf4b", edgecolor="#5e842f", label="Sawah"),
+            patches.Patch(facecolor="#3ea4e8", edgecolor="#1a71b3", label="Sungai"),
+            patches.Patch(facecolor="#c59163", edgecolor="#7d421d", label="Tambang"),
+        ]
+        leg = ax.legend(
+            handles=legend_elements,
+            loc="upper center",
+            bbox_to_anchor=(0.44, -0.02),
+            ncol=5,
+            fontsize=8.2,
+            frameon=True,
+            facecolor="#ffffff",
+            edgecolor="#94a3b8",
+            framealpha=0.98,
+        )
+        leg.get_frame().set_linewidth(1.2)
+
+        # Kompas Arah Utara (North Arrow) & Skala 1 km persis image.png
+        ax.annotate(
+            "N", xy=(1920, -55), xytext=(1920, -115),
+            arrowprops=dict(facecolor="#1e293b", edgecolor="#0f172a", width=2.5, headwidth=9),
+            ha="center", va="center", fontsize=9, weight="bold", color="#1e293b",
+            annotation_clip=False, zorder=20
+        )
+        ax.plot([1780, 1980], [-135, -135], color="#1e293b", linewidth=2.0, clip_on=False, zorder=20)
+        ax.plot([1780, 1780], [-130, -140], color="#1e293b", linewidth=2.0, clip_on=False, zorder=20)
+        ax.plot([1980, 1980], [-130, -140], color="#1e293b", linewidth=2.0, clip_on=False, zorder=20)
+        ax.text(1880, -150, "1 km", ha="center", va="top", fontsize=8.5, weight="bold", color="#1e293b", clip_on=False, zorder=20)
+
     return ax
+
+
 

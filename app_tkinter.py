@@ -840,13 +840,14 @@ class FacilityLocationTkApp:
         """Menggambar peta, heatmap, dan elemen dinamis GA pada aksis ax."""
         ax.clear()
         cmap_name = "RdYlGn" if self.mode_var.get() == "max" else "RdYlGn_r"
-        title_txt = "🧬 Genetic Algorithm (GA) — Tampilan Layar Penuh" if is_full else "Genetic Algorithm (GA) — Populasi & Elit"
+        title_txt = "GA: Genetic Algorithm — Tampilan Layar Penuh" if is_full else "GA: Genetic Algorithm — Populasi & Elit"
 
         plot_map(
             self.map_model,
             ax=ax,
             title=title_txt,
             show_legend=False,
+            show_banner=is_full,
             show_heatmap=True,
             heatmap_grid=self.heatmap_grid,
             heatmap_extent=self.heatmap_extent,
@@ -889,13 +890,14 @@ class FacilityLocationTkApp:
         """Menggambar peta, heatmap, dan elemen dinamis PSO pada aksis ax."""
         ax.clear()
         cmap_name = "RdYlGn" if self.mode_var.get() == "max" else "RdYlGn_r"
-        title_txt = "🚀 Particle Swarm Optimization (PSO) — Tampilan Layar Penuh" if is_full else "Particle Swarm Optimization (PSO) — Swarm & Quiver"
+        title_txt = "PSO: Particle Swarm Optimization — Tampilan Layar Penuh" if is_full else "PSO: Particle Swarm Optimization — Swarm & Quiver"
 
         plot_map(
             self.map_model,
             ax=ax,
             title=title_txt,
             show_legend=False,
+            show_banner=is_full,
             show_heatmap=True,
             heatmap_grid=self.heatmap_grid,
             heatmap_extent=self.heatmap_extent,
