@@ -1,0 +1,32 @@
+================================================================================
+LAPORAN UJI HIPOTESIS STATISTIK: PERBANDINGAN GA vs PSO
+Peta: Peta Studi: Desa, Jalan Lintas, dan Kawasan Hauling | Anggaran: 2000 Evaluasi | 30 Run Independen
+================================================================================
+
+--- ANALISIS MODE: MAX ---
+1. Uji Fitness Akhir:
+   * GA  -> Mean: 0.7829, Median: 0.7851
+   * PSO -> Mean: 0.7851, Median: 0.7851
+   * Mann-Whitney U: 654.00
+   * p-value: 2.61346e-03 (Signifikan: True)
+   * Kesimpulan: Terdapat perbedaan yang SIGNIFIKAN secara statistik antara GA dan PSO pada metrik Fitness Akhir (Mode max) (Mann-Whitney U = 654.00, p-value = 2.61346e-03 < 0.05). Algoritma GA mengungguli kompetitornya dengan median GA = 0.7851 berbanding 0.7851 (Rank-Biserial r = -0.453).
+
+2. Uji Kecepatan Konvergensi (Evaluasi ke 95%):
+   * GA  -> Median Evaluasi: 192.0
+   * PSO -> Median Evaluasi: 200.0
+   * Mann-Whitney U: 424.00, p-value: 7.04126e-01
+   * Kesimpulan: TIDAK terdapat perbedaan signifikan secara statistik antara GA dan PSO pada metrik Evaluasi ke 95% (Kecepatan) (Mann-Whitney U = 424.00, p-value = 0.70413 >= 0.05). Kedua algoritma menunjukkan performa yang sebanding (Median GA = 192.0000, Median PSO = 200.0000).
+
+--- ANALISIS MODE: MIN_VALID ---
+1. Uji Fitness Akhir:
+   * GA  -> Mean: 0.9289, Median: 0.9312
+   * PSO -> Mean: 0.9234, Median: 0.9312
+   * Mann-Whitney U: 854.00
+   * p-value: 3.10090e-10 (Signifikan: True)
+   * Kesimpulan: Terdapat perbedaan yang SIGNIFIKAN secara statistik antara GA dan PSO pada metrik Fitness Akhir (Mode min_valid) (Mann-Whitney U = 854.00, p-value = 3.10090e-10 < 0.05). Algoritma GA mengungguli kompetitornya dengan median GA = 0.9312 berbanding 0.9312 (Rank-Biserial r = -0.898).
+
+2. Uji Kecepatan Konvergensi (Evaluasi ke 95%):
+   * GA  -> Median Evaluasi: 154.0
+   * PSO -> Median Evaluasi: 560.0
+   * Mann-Whitney U: 5.00, p-value: 3.67564e-11
+   * Kesimpulan: Terdapat perbedaan yang SIGNIFIKAN secara statistik antara GA dan PSO pada metrik Evaluasi ke 95% (Kecepatan) (Mann-Whitney U = 5.00, p-value = 3.67564e-11 < 0.05). Algoritma GA mengungguli kompetitornya dengan median GA = 154.0000 berbanding 560.0000 (Rank-Biserial r = 0.989).

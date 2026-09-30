@@ -1,0 +1,68 @@
+{
+  "map": {
+    "width": 2000.0,
+    "height": 1500.0,
+    "default_file": "maps/desa_ramai.json"
+  },
+  "facility": {
+    "num_stores": 1,
+    "cannibalization_distance": 400.0,
+    "cannibalization_weight": 0.5
+  },
+  "fitness_weights": {
+    "w1_populasi": 0.35,
+    "w2_akses_jalan": 0.25,
+    "w3_fasilitas": 0.2,
+    "w4_kompetitor": 0.2,
+    "w5_biaya_lahan": 0.15
+  },
+  "fitness_params": {
+    "sigma_populasi": 250.0,
+    "sigma_jalan": 150.0,
+    "sigma_fasilitas": 200.0,
+    "competitor_d_opt": 350.0,
+    "land_cost_center_x": 1000.0,
+    "land_cost_center_y": 750.0,
+    "land_cost_sigma": 600.0,
+    "penalty_forbidden": 1000.0,
+    "penalty_out_of_bounds": 1000.0,
+    "facility_weights": {
+      "sekolah": 1.5,
+      "pasar": 2.0,
+      "restoran": 1.2,
+      "bengkel": 0.8,
+      "masjid_kantor": 1.0
+    },
+    "road_class_weights": {
+      "arteri": 1.0,
+      "kolektor": 0.8,
+      "lokal": 0.5,
+      "hauling": 0.3
+    }
+  },
+  "optimization": {
+    "evaluation_budget": 2000,
+    "population_size": 40,
+    "seed": 42,
+    "mode": "max",
+    "invert_features": []
+  },
+  "ga": {
+    "crossover_rate": 0.85,
+    "mutation_rate": 0.15,
+    "tournament_size": 3,
+    "blx_alpha": 0.5,
+    "gaussian_mutation_sigma": 40.0,
+    "elitism_count": 2
+  },
+  "pso": {
+    "inertia_weight": 0.729,
+    "inertia_decay": true,
+    "inertia_max": 0.9,
+    "inertia_min": 0.4,
+    "c1_cognitive": 1.494,
+    "c2_social": 1.494,
+    "v_max_fraction": 0.15,
+    "boundary_handling": "reflect"
+  }
+}
