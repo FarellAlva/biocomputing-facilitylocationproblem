@@ -608,12 +608,12 @@ def plot_map(
         r_class = road.get("class", "lokal")
 
         if r_class == "arteri":
-            # JL. LINTAS PROVINSI (4 Lajur Aspal Gelap)
-            ax.plot(pts[:, 0], pts[:, 1], color="#202428", linewidth=13.0, solid_capstyle="butt", zorder=4.5)
-            ax.plot(pts[:, 0], pts[:, 1], color="#33383e", linewidth=10.5, solid_capstyle="butt", zorder=4.6)
-            ax.plot(pts[:, 0] - 8, pts[:, 1], color="#e2e8f0", linewidth=1.2, zorder=4.7)
-            ax.plot(pts[:, 0] + 8, pts[:, 1], color="#e2e8f0", linewidth=1.2, zorder=4.7)
-            ax.plot(pts[:, 0], pts[:, 1], color="#ffffff", linewidth=1.8, linestyle=(0, (6, 6)), zorder=4.8)
+            # JL. LINTAS PROVINSI (4 Lajur Aspal Gelap Diperlebar & Marka Tengah Proporsional)
+            # Dasar aspal gelap diperlebar dan diperhalus sesuai diagram referensi image.png
+            ax.plot(pts[:, 0], pts[:, 1], color="#181c20", linewidth=22.0, solid_capstyle="butt", zorder=4.6)
+            ax.plot(pts[:, 0], pts[:, 1], color="#38404a", linewidth=17.5, solid_capstyle="butt", zorder=4.7)
+            # Garis marka tengah putus-putus putih tipis dan rapi proporsional
+            ax.plot(pts[:, 0], pts[:, 1], color="#ffffff", linewidth=1.5, linestyle=(0, (6, 7)), zorder=4.8)
 
         elif r_class == "hauling":
             # JALAN HAULING (Jalur Lebar Tanah Merah / Clay dengan Jejak Ban Truk)
