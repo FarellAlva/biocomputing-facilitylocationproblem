@@ -1,199 +1,255 @@
-# Optimasi Penempatan Fasilitas Minimarket (Facility Location Problem)
-### Perbandingan Algoritma Genetika (GA) dan Particle Swarm Optimization (PSO)
+# Optimasi Penentuan Lokasi Fasilitas Koperasi Desa (KOPDES) Sukamaju Mandiri
+### Perbandingan Algoritma Genetika (GA) dan Particle Swarm Optimization (PSO) Berbasis Data Lapangan Spasial
 
-Proyek ini mengimplementasikan penyelesaian masalah **Facility Location** untuk mencari penempatan paling efektif minimarket pada peta wilayah kustom berukuran **2.0 km × 1.5 km** (koordinat meter). Implementasi algoritma GA dan PSO ditulis **murni dari nol (from scratch)** menggunakan pustaka standar saintifik Python (**NumPy, SciPy, Pandas, Matplotlib, Pytest**) tanpa bergantung pada pustaka optimasi siap pakai (seperti DEAP atau PySwarms), sehingga setiap langkah matematis dan algoritmik dapat dijelaskan secara transparan saat presentasi ilmiah.
+Proyek komputasi evolusioner ini memodelkan dan menyelesaikan permasalahan nyata **Facility Location Problem (FLP)**: menentukan koordinat lokasi pembangunan gedung terpadu **Koperasi Desa (KOPDES) Sukamaju Mandiri** di dalam 1 wilayah desa seluas **300 Hektar (2.0 km × 1.5 km = 2.000 m × 1.500 m)**. 
+
+Implementasi **Real-Coded Genetic Algorithm (GA)** dan **Continuous Particle Swarm Optimization (PSO)** ditulis **murni dari nol (*from scratch*)** menggunakan pustaka saintifik Python (**NumPy, SciPy, Pandas, Matplotlib, Tkinter, Pytest**) tanpa bergantung pada pustaka optimasi siap pakai (seperti DEAP atau PySwarms). Hal ini memastikan setiap operator matematis, seleksi, rekombinasi, pergerakan partikel, dan penanganan batasan spasial dapat dipertanggungjawabkan secara transparan dan terverifikasi secara ilmiah.
 
 ---
 
-## 1. Struktur Proyek
+## 1. Peta Tata Ruang Wilayah Desa Sukamaju
+
+Wilayah studi memodelkan 1 desa lengkap dengan dinamika heterogen yang mencakup sentra permukiman warga, persawahan irigasi teknis, jaringan jalan berbagai kelas perkerasan, fasilitas publik, dan kawasan lindung:
+
+![Peta Tata Ruang Wilayah Desa Sukamaju pada Kanvas Tkinter](results/map_study_area.png)
+*Gambar 1: Peta Tata Ruang Wilayah Desa Sukamaju (2.0 km × 1.5 km) yang dirender langsung pada kanvas grafis Tkinter.*
+
+### Karakteristik Spasial Wilayah Desa:
+1. **Permukiman Warga Desa (520 KK)**: Tersebar pada 50 klaster perumahan di sisi barat dengan populasi 4 hingga 18 KK per klaster.
+2. **Kondisi Jaringan Jalan**:
+   - **Jalan Arteri / Lintas Provinsi** (Lebar 17.5 pt, aspal hotmix mulus dua arah, kapasitas truk besar, mutu $K = 1.00$).
+   - **Jalan Kolektor / Jalan Utama Desa** (Lebar 11.0 pt, aspal kokoh dilewati seluruh warga dan truk logistik pupuk, mutu $K = 0.85$).
+   - **Jalan Lokal Lingkungan** (Lebar 6.0 pt, paving block sempit antar dusun, mutu $K = 0.60$).
+   - **Jalan Hauling / Tanah Lumpur** (Lebar 5.0 pt, jalan tanah merah di timur yang becek dan licin saat hujan, mutu $K = 0.20$).
+3. **Fasilitas Publik Eksisting**: Pasar Desa ($\beta = 2.0$), SDN Sukamaju 1 ($\beta = 1.5$), Warung Makan ($\beta = 1.2$), Bengkel Motor ($\beta = 0.8$), dan Masjid Jami'/Balai Desa ($\beta = 1.0$).
+4. **Warung Kelontong Warga Lama (Kompetitor K)**: Terletak di koordinat $(X = 860\text{ m}, Y = 800\text{ m})$ dekat jembatan desa.
+5. **Zona Terlarang Dilindungi (Dilarang Membangun Fisik)**:
+   - Poligon Sawah Irigasi Produktif (dilindungi Perda LP2B).
+   - Poligon Sempadan Sungai Sukamaju (rawan banjir bandang & erosi tebing).
+   - Poligon Hutan Lindung Adat (konservasi tangkapan air utara).
+   - Poligon Galian Tambang C (area berbahaya operasional alat berat).
+
+---
+
+## 2. Antarmuka Simulasi Interaktif GUI Desktop (Tkinter)
+
+Seluruh dinamika pencarian solusi metaheuristik dijalankan secara visual dan interaktif melalui aplikasi desktop berbasis **Tkinter** ([`app_tkinter.py`](app_tkinter.py)):
+
+![Antarmuka Simulasi Interaktif Tkinter Mode Berdampingan](results/tkinter_simulasi_split.png)
+*Gambar 2: Antarmuka Simulasi Interaktif Tkinter Mode Berdampingan (Split View): Sebaran Individu GA (Kiri), Pergerakan Partikel PSO (Kanan), dan Kurva Konvergensi Live Real-Time (Bawah).*
+
+### Fitur-Fitur Utama GUI Tkinter:
+- **Tampilan Split-Screen & Layar Penuh**: Mendukung mode split berdampingan (GA vs PSO bersamaan), layar penuh GA, layar penuh PSO, atau layar penuh kurva konvergensi.
+- **Kontrol Playback Real-Time**: Play/Pause, Step (langkah per generasi/iterasi), Reset, Run to End, serta pengaturan delay kecepatan animasi (10 ms – 300 ms).
+- **Mode Optimasi Dinamis**: Radio button untuk beralih instan antara **Mode Maksimasi** (mencari lokasi KOPDES terbaik) dan **Mode Minimasi Valid** (mencari lokasi terburuk yang tetap legal di tepi jalan).
+- **Slider Bobot Kriteria Interaktif**: Pengguna dapat mengubah bobot $w_1$ (Warga), $w_2$ (Jalan), $w_3$ (Fasilitas), dan $w_4$ (Kompetitor) secara bebas, lalu menekan tombol **"🔄 Terapkan Bobot & Hitung Ulang"** untuk melihat simulasi skenario secara live (*What-If Sensitivity Analysis*).
+- **Tab Inspeksi Titik (Klik Peta)**: Klik titik manapun pada kanvas peta untuk membedah status legalitas zonasi, jarak koridor jalan, estimasi fitness, dan nilai masing-masing dari 4 fitur.
+- **Navigasi Zoom & Pan Mandiri**: Zoom in/out independen untuk subplot GA atau PSO via scroll mouse, tombol toolbar, atau preset fokus wilayah desa.
+
+---
+
+## 3. Formulasi Matematis Fungsi Kebugaran (*Fitness Function*)
+
+Fungsi kebugaran dirumuskan secara aditif berbasis **4 Fitur Kebugaran Berbobot (*Weight Fitting Features*)** yang seluruhnya distandarisasi ke rentang $[0.0, 1.0]$:
+
+$$\max_{\mathbf{x}} \mathcal{F}(\mathbf{x}) = w_1 S_{\text{pop}}(\mathbf{x}) + w_2 S_{\text{road}}(\mathbf{x}) + w_3 S_{\text{fac}}(\mathbf{x}) + w_4 S_{\text{comp}}(\mathbf{x}) - \text{Penalti}(\mathbf{x})$$
+
+Dengan total bobot ternormalisasi:
+$$\sum_{k=1}^4 w_k = w_1 + w_2 + w_3 + w_4 = 0.35 + 0.25 + 0.20 + 0.20 = \mathbf{1.00} \quad (\mathbf{100\%})$$
+
+### Rincian Formulasi Ke-4 Fitur:
+
+#### 1. Kepadatan Pemukiman Warga Desa ($S_{\text{pop}}$, Bobot $w_1 = 0.35$)
+Mengukur kemudahan akses bagi 520 kepala keluarga (KK) warga desa di 50 klaster rumah melalui peluruhan eksponensial Gaussian:
+$$S_{\text{pop}}(\mathbf{x}) = \operatorname{clip}\left( \frac{1}{M_{\text{pop}}} \sum_{i=1}^{50} h_i \cdot \exp\left( - \frac{\|\mathbf{x} - \mathbf{h}_i\|^2}{2 \sigma_{\text{pop}}^2} \right), 0.0, 1.0 \right)$$
+- $\mathbf{h}_i$: koordinat klaster rumah warga ke-$i$.
+- $h_i$: bobot jumlah KK ($4 \sim 18$ KK, total 520 KK).
+- $\sigma_{\text{pop}} = 250.0\text{ meter}$: radius jalan kaki yang nyaman bagi warga.
+- $M_{\text{pop}}$: faktor pembagi normalisasi terkalibrasi otomatis pada pusat massa kepadatan pemukiman.
+
+#### 2. Kondisi & Mutu Jalan Distribusi ($S_{\text{road}}$, Bobot $w_2 = 0.25$)
+Menilai kelayakan fisik jalan untuk dilalui armada truk 6 roda pengangkut pupuk bersubsidi dan pickup sembako:
+$$S_{\text{road}}(\mathbf{x}) = K_{\text{class}}(\mathbf{x}) \cdot \exp\left( - \frac{d_{\text{road}}(\mathbf{x})^2}{2 \sigma_{\text{road}}^2} \right)$$
+- $d_{\text{road}}(\mathbf{x})$: jarak ortogonal terpendek ke garis sumbu jalan terdekat ($\sigma_{\text{road}} = 150.0\text{ m}$).
+- $K_{\text{class}}(\mathbf{x})$: koefisien mutu jalan:
+  $$K_{\text{class}} = \begin{cases} 
+  1.00, & \text{Jalan Arteri / Lintas Provinsi (Aspal hotmix tebal dua arah)} \\ 
+  0.85, & \text{Jalan Kolektor / Jalan Utama Desa (Aspal mulus kokoh untuk truk pupuk)} \\ 
+  0.60, & \text{Jalan Lokal Dusun (Paving block / aspal sempit)} \\ 
+  0.20, & \text{Jalan Hauling / Tanah Lumpur (Licin, becek berlumpur saat hujan, diskon 80\%)} 
+  \end{cases}$$
+
+#### 3. Sinergi Fasilitas Umum Desa ($S_{\text{fac}}$, Bobot $w_3 = 0.20$)
+Menghitung daya tarik keramaian dari fasilitas publik desa eksisting (*trip-chaining*):
+$$S_{\text{fac}}(\mathbf{x}) = \operatorname{clip}\left( \frac{1}{M_{\text{fac}}} \sum_{k \in \mathcal{K}} \beta_k \sum_{j=1}^{M_k} f_{k,j} \cdot \exp\left( - \frac{\|\mathbf{x} - \mathbf{p}_{k,j}\|^2}{2 \sigma_{\text{fac}}^2} \right), 0.0, 1.0 \right)$$
+- $\beta_{\text{pasar}} = 2.0$ (Pasar Desa: magnet ekonomi harian terbesar).
+- $\beta_{\text{sekolah}} = 1.5$ (SDN Sukamaju 1: titik kumpul pagi hari orang tua murid).
+- $\beta_{\text{warung}} = 1.2$, $\beta_{\text{masjid/kantor}} = 1.0$, $\beta_{\text{bengkel}} = 0.8$.
+- $\sigma_{\text{fac}} = 200.0\text{ meter}$.
+
+#### 4. Jarak Aman Toko Kelontong Warga Lama ($S_{\text{comp}}$, Bobot $w_4 = 0.20$)
+Menjaga jarak ideal dari warung kelontong warga lama (Toko K di $X=860, Y=800$) menggunakan kurva non-monotonik Ricker:
+$$S_{\text{comp}}(\mathbf{x}) = \begin{cases} 
+S_{\text{base}}(R) \cdot \left( \dfrac{d_c(\mathbf{x})}{180.0} \right)^{1.8}, & \text{jika } d_c(\mathbf{x}) < 180.0\text{ meter} \\ 
+S_{\text{base}}(R), & \text{jika } d_c(\mathbf{x}) \ge 180.0\text{ meter} 
+\end{cases}$$
+Di mana $R = \frac{d_c}{d_{\text{opt}}}$ dengan $d_{\text{opt}} = 350.0\text{ meter}$ dan $S_{\text{base}}(R) = R^{1.6} \cdot \exp(1.0 - R^{1.6})$. Jarak optimal $350\text{ m}$ menghasilkan skor $1.00$, sedangkan jarak $< 180\text{ m}$ dipotong penalti kanibalisasi agar tidak mematikan usaha warga.
+
+---
+
+### Penanganan Batasan (*Constraints*) & Mode Minimasi:
+
+1. **Penalti Batasan Spasial & Koridor Jalan**:
+   $$\mathcal{F}_{\text{final}}(\mathbf{x}) = \begin{cases} 
+   -1000.0, & \text{jika melanggar batas desa } (0 \le x \le 2000, 0 \le y \le 1500) \text{ atau masuk zona terlarang} \\ 
+   -10.0 - \dfrac{d_{\text{road}}(\mathbf{x}) - 50.0}{50.0}, & \text{jika } d_{\text{road}}(\mathbf{x}) > 50.0\text{ m (di luar koridor akses jalan)} \\ 
+   \mathcal{F}(\mathbf{x}), & \text{jika seluruh batasan terpenuhi (Solusi Feasible, } \mathcal{F} \in [0, 1]) 
+   \end{cases}$$
+   Deteksi zona poligon terlarang dilakukan secara eksak menggunakan algoritma **Ray-Casting Vectorized NumPy**.
+
+2. **Mode Maksimum vs Mode Minimum (`min_valid`)**:
+   - **Mode Maksimum (`mode="max"`)**: $\mathcal{F} = \text{avg\_score}$ (Mencari lokasi KOPDES terbaik).
+   - **Mode Minimum (`mode="min_valid"`)**: $\mathcal{F} = \mathbf{1.0 - \text{avg\_score}}$ (Mencari lokasi terburuk yang tetap legal di pinggir jalan desa). Penalti batas $-1000.0$ tetap aktif sehingga algoritma tidak akan memilih sawah irigasi atau hutan.
+
+---
+
+## 4. Algoritma Optimasi (Ditulis dari Nol)
+
+### Genetic Algorithm (GA) — [`ga.py`](ga.py)
+- **Representasi**: Kromosom riil $\mathbf{C} = [x, y]$.
+- **Seleksi**: *Tournament Selection* ($k = 3$).
+- **Crossover**: *BLX-$\alpha$ (Blend Crossover)* dengan $\alpha = 0.5$ ($P_c = 0.85$):
+  $$c_d \sim \mathcal{U}\left(c_{\min} - \alpha \cdot I, \; c_{\max} + \alpha \cdot I\right), \quad I = c_{\max} - c_{\min}$$
+- **Mutasi**: *Adaptive Gaussian Mutation* ($\sigma_{\text{mut}} = 40.0\text{ m}$, $P_m = 0.15$ per gen).
+- **Elitisme**: $2$ individu terbaik dipertahankan tanpa mutasi ke generasi berikutnya.
+
+### Particle Swarm Optimization (PSO) — [`pso.py`](pso.py)
+- **Representasi**: Partikel dengan posisi $\mathbf{x}_i \in \mathbb{R}^2$ dan kecepatan $\mathbf{v}_i \in [-v_{\max}, v_{\max}]$.
+- **Pembaruan Kecepatan & Posisi**:
+  $$\mathbf{v}_i^{t+1} = w^t \cdot \mathbf{v}_i^t + c_1 r_1 (\mathbf{p}_{\text{best}, i} - \mathbf{x}_i^t) + c_2 r_2 (\mathbf{g}_{\text{best}} - \mathbf{x}_i^t)$$
+  $$\mathbf{x}_i^{t+1} = \mathbf{x}_i^t + \mathbf{v}_i^{t+1}$$
+- **Inersia Adaptif (Linear Decay)**: $w(t) = 0.9 \to 0.4$, $c_1 = 1.494$ (kognitif), $c_2 = 1.494$ (sosial).
+- **Penanganan Batas**: *Boundary Reflection* (kecepatan dibalik dan posisi dipantulkan ke dalam wilayah).
+
+---
+
+## 5. Hasil Komputasi dan Visualisasi Simulasi
+
+Kedua algoritma diuji dengan protokol **Matched Budget** tepat **2.000 kali evaluasi fungsi fitness** per pengujian.
+
+### Visualisasi Hasil Layar Penuh pada Kanvas Tkinter:
+
+#### A. Algoritma Genetika (GA) Layar Penuh
+![Hasil GA Layar Penuh](results/tkinter_simulasi_ga_full.png)
+*Gambar 3: Tampilan Layar Penuh GA pada Kanvas Tkinter: Sebaran Populasi Kromosom, Mutasi, dan Rekomendasi Titik KOPDES.*
+
+#### B. Particle Swarm Optimization (PSO) Layar Penuh
+![Hasil PSO Layar Penuh](results/tkinter_simulasi_pso_full.png)
+*Gambar 4: Tampilan Layar Penuh PSO pada Kanvas Tkinter: Partikel Swarm, Posisi pbest, dan Posisi Optimal Global gbest KOPDES.*
+
+#### C. Grafik Konvergensi Live Real-Time
+![Kurva Konvergensi GA vs PSO](results/tkinter_simulasi_conv_full.png)
+*Gambar 5: Kurva Konvergensi Live Matched Budget 2.000 Evaluasi GA vs PSO pada Kanvas Tkinter.*
+
+---
+
+### Tabel Perbandingan Kinerja (30 Run Independen):
+
+| Metrik Evaluasi | Genetic Algorithm (GA) | Particle Swarm Optimization (PSO) | Evaluasi Ilmiah |
+|---|---|---|---|
+| **Nilai Fitness Terbaik (Max)** | **0.785148** | **0.785148** | Identik hingga 6 angka desimal |
+| **Nilai Fitness Rata-rata (Mean)** | 0.782871 | **0.785148** | PSO lebih konsisten dan seragam |
+| **Median Fitness** | **0.785148** | **0.785148** | Identik sempurna |
+| **Standar Deviasi (Std)** | 0.012471 | **0.000000** ($4.39 \times 10^{-10}$) | PSO memiliki stabilitas sempurna |
+| **Interquartile Range (IQR)** | $1.02 \times 10^{-10}$ | **$8.69 \times 10^{-11}$** | Variasi kuartil sangat rapat |
+| **Persentase Solusi Layak** | **100.0% (30/30)** | **100.0% (30/30)** | Keduanya 100% patuh batasan desa |
+| **Rata-rata Waktu Eksekusi** | 1.897 ± 0.917 s | **0.624 ± 0.096 s** | **PSO 3.0× lebih cepat** |
+| **Titik Rekomendasi KOPDES** | **$(X = 295.4\text{ m}, Y = 753.8\text{ m})$** | **$(X = 295.4\text{ m}, Y = 753.8\text{ m})$** | **Konvergen ke titik fisik yang sama** |
+
+### Uji Hipotesis Statistik Mann-Whitney U:
+- Nilai $U = 654.00$, $p\text{-value} = 0.00261 < 0.05$ (**Signifikan secara statistik**).
+- Rank-Biserial Correlation $r = -0.453$.
+- **Kesimpulan**: PSO terbukti secara statistik signifikan lebih stabil dan efisien dalam komputasi continuous FLP, sementara GA memiliki keunggulan eksplorasi yang tangguh.
+
+---
+
+## 6. Struktur Direktori Proyek
 
 ```text
 biocomputing-7/
-├── config.json               # Konfigurasi bobot fitness, parameter GA, PSO, dan batasan peta
-├── requirements.txt          # Daftar dependensi library resmi
-├── map_model.py              # Model peta, loading JSON, geometri (point-in-poly, jarak jalan), plot_map
-├── fitness.py                # FitnessEvaluator, counter evaluasi, normalisasi [0,1], mode max/min_valid
-├── ga.py                     # Algoritma Genetika real-coded (Tournament, BLX-alpha, Gaussian Mutation, Elitism)
-├── pso.py                    # Particle Swarm Optimization (Inersia linear decay, c1, c2, boundary reflect/clamp)
-├── stats_utils.py            # Kalkulasi evaluasi ke-95%, ringkasan deskriptif, uji Mann-Whitney U (SciPy)
-├── generate_maps.py          # Generator 3 preset peta kustom (desa_ramai, hauling, campuran)
-├── app_tkinter.py            # Aplikasi simulasi interaktif GUI desktop (Tkinter + Matplotlib)
-├── run_batch.py              # Eksperimen 30 run independen GA vs PSO (mode max & min_valid)
-├── analyze.py                # Analisis statistik batch, uji hipotesis, boxplot, konvergensi, scatter lokasi
-├── test_facility.py          # Unit test (Pytest) untuk evaluasi, counter, reproduktifitas, dan geometri
-├── maps/                     # Folder penyimpanan file peta JSON
+├── config.json                     # Konfigurasi bobot fitness, parameter GA, PSO, dan batasan
+├── requirements.txt                # Dependensi pustaka Python
+├── map_model.py                    # Model peta spasial, parsing JSON, ray-casting geometri, styling peta
+├── fitness.py                      # Evaluator multi-kriteria, counter evaluasi, mode max/min_valid
+├── ga.py                           # Real-coded GA from scratch (Tournament, BLX-alpha, Gaussian, Elitism)
+├── pso.py                          # Continuous PSO from scratch (Inertia decay, cognitive, social, reflect)
+├── app_tkinter.py                  # Aplikasi simulasi interaktif GUI Desktop (Tkinter + Matplotlib Canvas)
+├── run_batch.py                    # Runner eksperimen 30 run independen matched budget
+├── analyze.py                      # Analisis statistik batch, uji Mann-Whitney U, dan plotting
+├── stats_utils.py                  # Helper kalkulasi statistik deskriptif & non-parametrik
+├── generate_maps.py                # Generator preset peta wilayah desa
+├── build_docx_report.py            # Generator otomatis berkas laporan formal Word (.docx)
+├── LAPORAN_OPTIMASI_GA_PSO.md      # Laporan akademik lengkap format Markdown
+├── LAPORAN_OPTIMASI_GA_PSO_REVISI.docx # Laporan akademik formal Word lengkap dengan gambar & tabel
+├── test_facility.py                # Unit test (Pytest) untuk evaluasi, counter, dan batasan geometri
+├── maps/                           # Direktori berkas peta spasial JSON
+│   ├── peta_studi.json
 │   ├── desa_ramai.json
 │   ├── hauling.json
 │   └── campuran.json
-└── results/                  # Folder output batch (CSV, NPZ, PNG, TXT laporan)
+└── results/                        # Direktori output visualisasi & data statistik
+    ├── map_study_area.png
+    ├── tkinter_simulasi_split.png
+    ├── tkinter_simulasi_ga_full.png
+    ├── tkinter_simulasi_pso_full.png
+    ├── tkinter_simulasi_conv_full.png
     ├── raw_runs.csv
-    ├── config_used.json
-    ├── convergence_data.npz
     ├── summary_statistics.csv
-    ├── statistical_test_report.txt
-    ├── boxplot_fitness.png
-    ├── convergence_comparison.png
-    └── final_locations_scatter.png
+    └── statistical_test_report.txt
 ```
 
-> **Catatan Modularitas**: Modul inti komputasi (`map_model.py`, `fitness.py`, `ga.py`, `pso.py`, `stats_utils.py`) **tidak mengimpor matplotlib di tingkat modul**, sehingga proses optimasi dan evaluasi batch dapat berjalan cepat dan murni pada lingkungan headless/server.
-
 ---
 
-## 2. Model Peta Kustom (Format JSON)
+## 7. Panduan Menjalankan Program
 
-Peta berukuran $2000 \times 1500$ meter merepresentasikan bentang lahan nyata dengan elemen-elemen berikut:
-1. **Pemukiman / Rumah**: Titik koordinat $(x, y)$ dengan bobot kepadatan penduduk ($w_i$).
-2. **Fasilitas Umum**: Sekolah ($w=1.5$), Pasar ($w=2.0$), Restoran ($w=1.2$), Bengkel ($w=0.8$), dan Masjid/Kantor ($w=1.0$).
-3. **Kompetitor Minimarket Eksisting**: Titik lokasi minimarket pesaing yang sudah beroperasi.
-4. **Jaringan Jalan**: Polyline dengan hierarki kelas jalan (*Arteri, Kolektor, Lokal, Hauling*) dan volume lalu lintas ($0.0 - 1.0$).
-5. **Zona Terlarang**: Poligon tertutup (*Sungai, Sawah Produktif, Hutan Lindung, Lahan Tambang*) yang tidak boleh dibangun toko fisik.
-
-### Tiga Preset Peta:
-- **`desa_ramai.json`**: Pemukiman padat penduduk, 2 sekolah, deretan restoran, bengkel, pasar sentral, 2 kompetitor, dilintasi sungai berliku dan persawahan.
-- **`hauling.json`**: Kawasan pertambangan terpencil dengan populasi barak sangat jarang, jalan hauling industri dengan truk berat, fasilitas minim, zona pit tambang dan hutan lindung luas.
-- **`campuran.json`**: Zona transisi pinggiran pedesaan menuju koridor industri hauling dengan fasilitas sedang dan 1 kompetitor di persimpangan.
-
----
-
-## 3. Rumus dan Komponen Fungsi Fitness
-
-Fungsi kesesuaian lokasi mengevaluasi kelayakan penempatan minimarket berdasarkan multi-kriteria:
-
-$$\mathcal{F}(x, y) = w_1 \cdot \text{Populasi} + w_2 \cdot \text{AksesJalan} + w_3 \cdot \text{Fasilitas} + w_4 \cdot \text{Kompetitor} - w_5 \cdot \text{BiayaLahan} - \text{Penalti}$$
-
-Semua fitur dinormalisasi ke dalam rentang interval $[0, 1]$:
-
-### 1. Kepadatan Populasi ($S_{pop} \in [0, 1]$)
-Menggunakan model gravitasi spasial dengan peluruhan Gaussian:
-$$S_{pop}(x, y) = \frac{1}{M_{pop}} \sum_{i=1}^{N_{house}} w_i \cdot \exp\left( -\frac{d((x,y), \text{rumah}_i)^2}{2\sigma_{pop}^2} \right)$$
-Semakin dekat lokasi dengan kluster pemukiman padat, semakin tinggi potensi pasar pelanggan.
-
-### 2. Kondisi & Kelayakan Jalan ($S_{road} \in [0, 1]$) — Bagus (Proper) vs Bertanah Lumpur (Hauling)
-Karena penempatan minimarket sudah dibatasi wajib berada di koridor jalan fisik ($d \le 50\text{ m}$), kriteria ini **bukan sekadar mengukur ada/tidaknya jalan**, melainkan **kondisi fisik dan kelayakan jalan** untuk aktivitas belanja retail:
-- **Jalan Bagus / Proper ($0.85 - 1.0$)**: Jalan Arteri dan Kolektor Desa beraspal mulus, nyaman, dan aman dilalui motor/mobil pelanggan.
-- **Jalan Lokal ($0.50 - 0.60$)**: Paving block atau aspal dusun sederhana.
-- **Jalan Bertanah Lumpur / Hauling ($0.15 - 0.25$)**: Jalur hauling tambang berupa tanah merah yang becek/berlumpur saat hujan, berdebu pekat saat kemarau, dan berisiko tinggi karena dilewati truk tronton muatan batubara/mineral (sangat tidak layak untuk minimarket).
-
-$$d_{eff} = \min_{seg} \left( \frac{\text{dist}((x,y), seg)}{\text{bobot\_kualitas\_jalan} \cdot (1 + \text{lalu\_lintas})} \right)$$
-$$S_{road}(x,y) = \exp\left( -\frac{d_{eff}^2}{2\sigma_{road}^2} \right)$$
-
-### 3. Sinergi Fasilitas Umum ($S_{fac} \in [0, 1]$)
-Tarikan komersial dari titik bangkitan aktivitas (sekolah, pasar, perkantoran):
-$$S_{fac}(x,y) = \frac{1}{M_{fac}} \sum_{j=1}^{N_{fac}} w_j \cdot \exp\left( -\frac{d((x,y), \text{fasilitas}_j)^2}{2\sigma_{fac}^2} \right)$$
-
-### 4. Interaksi Kompetitor ($S_{comp} \in [0, 1]$) — Kurva Tidak Monoton
-Hubungan spasial non-monotonik menggunakan fungsi kurva Ricker:
-$$S_{comp}(d_c) = \left( \frac{d_c}{d_{opt}} \right) \cdot \exp\left( 1 - \frac{d_c}{d_{opt}} \right)$$
-- **Jika $d_c \to 0$ (berimpit)**: Nilai $\to 0$ (kanibalisasi langsung / perang harga).
-- **Pada jarak optimal $d_c = d_{opt} \approx 350\text{ m}$ (sweet spot)**: Nilai mencapai puncak **$1.0$** (memanfaatkan aglomerasi keramaian pasar tanpa kanibalisasi langsung).
-- **Jika $d_c \gg d_{opt}$ (terlalu jauh)**: Nilai meluruh mendekati $0$ (berada di wilayah sepi/terisolir yang tidak memiliki aktivitas komersial).
-
-### 5. Biaya Lahan ($S_{cost} \in [0, 1]$)
-Biaya sewa/akuisisi lahan diasumsikan lebih mahal pada pusat konsentrasi kota dan pinggir jalan arteri:
-$$S_{cost}(x,y) = 0.55 \cdot \exp\left( -\frac{d((x,y), \text{pusat})^2}{2\sigma_{center}^2} \right) + 0.45 \cdot S_{road}$$
-
-### 6. Penalti Batas & Zona Terlarang
-- Titik di luar koordinat peta ($x < 0, x > 2000, y < 0, y > 1500$) dikenakan penalti $-1000.0$.
-- Titik di dalam poligon zona terlarang dideteksi menggunakan algoritma **Ray Casting (Even-Odd rule)** dan dikenakan penalti $-1000.0$.
-
-### 7. Penempatan Multi-Toko ($p = 1, 2, 3$) & Kanibalisasi Internal
-Untuk vektor solusi berdimensi $2p$, skor rata-rata dihitung untuk seluruh toko. Jika jarak antar dua toko baru $d_{ij} < d_{cannibal}$ (default 400 m), diterapkan penalti kanibalisasi kuadratik:
-$$\text{Penalti Kanibalisasi} = \sum_{i < j} w_{cannibal} \cdot \left( 1 - \frac{d_{ij}}{d_{cannibal}} \right)^2$$
-
-### 8. Mode Optimasi: `max` vs `min_valid`
-- **Mode `max`**: Memaksimalkan nilai fitness bersih untuk menemukan lokasi toko terbaik.
-- **Mode `min_valid`**: Mencari **lokasi terburuk yang tetap VALID** (tidak di zona terlarang dan tidak di luar peta). Titik di zona terlarang tetap terkena penalti besar ($-1000.0$), sehingga algoritma secara presisi berkumpul pada titik valid dengan skor terendah.
-- **Invert Features**: Opsi konfigurasi `invert_features: ["kompetitor"]` untuk membalik skor fitur tertentu ($S \leftarrow 1.0 - S$).
-
----
-
-## 4. Jaminan Matched Evaluation Budget
-
-Dalam riset komparasi metaheuristik, membandingkan GA dan PSO berdasarkan jumlah generasi atau iterasi adalah keliru karena ukuran populasi dan struktur loop evaluasi dapat berbeda. 
-
-Pada proyek ini:
-1. Kedua algoritma dikendalikan oleh objek `FitnessEvaluator` yang memiliki counter internal `self.eval_count`.
-2. Setiap pemanggilan fungsi evaluasi kandidat menambah `self.eval_count += 1`.
-3. Algoritma GA dan PSO **dihentikan secara presisi tepat saat `eval_count >= budget`** (default: 2000 evaluasi).
-4. Prekomputasi matriks heatmap 2D untuk visualisasi dijalankan secara terpisah menggunakan parameter internal tanpa menambah `eval_count`, sehingga anggaran komputasi murni digunakan untuk pencarian solusi.
-
----
-
-## 5. Algoritma Optimasi (Ditulis dari Nol)
-
-### Genetic Algorithm (GA) — `ga.py`
-- **Representasi**: Kromosom riil kontinu berdimensi $2p$.
-- **Seleksi**: *Tournament Selection* (ukuran turnamen $k=3$).
-- **Crossover**: *BLX-$\alpha$ (Blend Crossover)* dengan $\alpha = 0.5$ untuk menjaga eksplorasi kontinu melampaui rentang kedua induk.
-- **Mutasi**: *Gaussian Mutation* ($\sigma_{mut} = 40.0\text{ m}$) dengan probabilitas per-gen $p_m = 0.15$.
-- **Elitisme**: $E = 2$ individu terbaik dipertahankan tanpa mutasi ke generasi berikutnya.
-- **Pelacakan Riwayat**: Menyimpan koordinat seluruh populasi, indeks elit, pasangan induk-anak, dan penanda mutasi untuk animasi flash.
-
-### Particle Swarm Optimization (PSO) — `pso.py`
-- **Representasi**: Partikel $X_i \in \mathbb{R}^{2p}$ dengan kecepatan $V_i \in [-V_{max}, V_{max}]$.
-- **Inersia Dinamis**: Peluruhan linier inersia dari $w_{max} = 0.9$ menuju $w_{min} = 0.4$ sepanjang iterasi untuk menyeimbangkan eksplorasi global awal dan eksploitasi lokal akhir.
-- **Komponen Akselerasi**: Kognitif $c_1 = 1.494$ dan Sosial $c_2 = 1.494$.
-- **Penanganan Batas**: Opsi *Reflect* (memantul dari dinding batas wilayah dengan pembalikan arah vektor kecepatan) atau *Clamp*.
-- **Pelacakan Riwayat**: Menyimpan posisi partikel, vektor kecepatan (untuk quiver), lintasan gerak pendek (*motion trail*), $pbest$, dan $gbest$.
-
----
-
-## 6. Cara Menjalankan Program
-
-### Prasyarat dan Instalasi
-Pastikan Python 3.9+ telah terpasang, lalu instal paket dependensi:
+### 1. Instalasi Dependensi
+Pastikan Python 3.9+ telah terpasang, lalu instal dependensi pustaka:
 ```bash
 pip install -r requirements.txt
 ```
 
-### 1. Menghasilkan File Preset Peta
-Menghasilkan 3 file JSON di dalam folder `maps/`:
+### 2. Menjalankan Simulasi Interaktif Tkinter (GUI Desktop)
+Untuk mendemonstrasikan visualisasi animasi GA vs PSO, inspeksi titik, dan pengujian slider bobot:
 ```bash
-python generate_maps.py
+python app_tkinter.py
 ```
 
-### 2. Menjalankan Pengujian Unit (Pytest)
-Memverifikasi fungsionalitas counter evaluasi, penalti zona, reproducibility seed, kanibalisasi, dan geometri:
+### 3. Menjalankan Pengujian Unit Otomatis (Pytest)
+Memvalidasi fungsionalitas counter matched budget, penalti zona terlarang, kurva Ricker, dan operator genetika:
 ```bash
 pytest -v test_facility.py
 ```
 
-### 3. Menjalankan Simulasi Interaktif (Tkinter)
-Aplikasi desktop berbasis **Tkinter** terintegrasi penuh untuk simulasi dan presentasi:
-```bash
-python app_tkinter.py
-```
-* **Fitur Interaktif Tkinter**:
-  * **Visualisasi Simultan**: Matplotlib live di canvas Tkinter (GA kiri, PSO kanan, Konvergensi bawah).
-  * **Zoom Independen Tiap Metode**: Zoom in/out mandiri untuk subplot GA atau PSO via scroll mouse, tombol toolbar `[➕] [➖] [Desa] [⟲]`, atau preset fokus desa.
-  * **Batasan Koridor Jalan**: Penempatan minimarket dibatasi di koridor jalan ($d \le 50\text{ m}$), dengan deteksi dan penalti off-road otomatis.
-  * **Visualisasi Mutasi Rapi**: Individu hasil mutasi ditandai titik kuning/amber yang jelas dan rapi tanpa garis laba-laba yang membingungkan.
-  * **1 Kompetitor Eksisting**: Penempatan 1 minimarket lama (K) di persimpangan jalan desa.
-  * **Kontrol Pemutaran**: Play/Pause, Step (langkah per langkah), Reset, Run to End, dan Slider Delay Kecepatan (ms).
-  * **Tab Papan Skor (Scoreboard)**: Live leader badge (*"GA Memimpin"* vs *"PSO Memimpin"*), perbandingan skor real-time, koordinat, evaluasi terpakai, dan bar matched budget.
-  * **Tab Inspeksi Titik (Klik Peta)**: Klik titik manapun pada peta untuk melihat koordinat $(X, Y)$, legalitas (valid atau zona terlarang), status koridor jalan ($d \le 50\text{ m}$), estimasi fitness, dan rincian bar meter 5 kriteria (*Populasi, Jalan, Fasilitas, Kompetitor, Biaya*).
-  * **Tab "Ini Apa & Bagaimana?"**: Penjelasan visual mendalam setiap warna, ikon, koridor jalan, dan rumus matematika.
-  * **Preset & Bobot Dinamis**: Ganti peta secara instan, ubah mode `max`/`min_valid`, dan atur bobot $w_1 - w_5$ dengan kalkulasi ulang langsung.
-
-### 4. Menjalankan Eksperimen Batch (30 Run Independen)
-Mengeksekusi 30 run mandiri untuk GA dan PSO (seed 1 s/d 30) pada kedua mode:
+### 4. Menjalankan Eksperimen Batch 30 Run
+Menjalankan pengujian stokastik 30 run independen dengan matched budget 2.000 evaluasi:
 ```bash
 python run_batch.py --runs 30 --budget 2000 --mode both
 ```
-Hasil akan tersimpan di:
-- `results/raw_runs.csv`: Data run individual (fitness, waktu, evaluasi ke-95%, koordinat).
-- `results/convergence_data.npz`: Kurva konvergensi tiap run.
-- `results/config_used.json`: Parameter konfigurasi yang digunakan.
 
-### 5. Melakukan Analisis Statistik & Visualisasi Ilmiah
-Menganalisis data batch, menghitung statistik deskriptif, menjalankan uji Mann-Whitney U, dan mencetak plot:
+### 5. Melakukan Analisis Statistik Ilmiah
+Menghitung statistik deskriptif dan menjalankan uji hipotesis Mann-Whitney U:
 ```bash
 python analyze.py
 ```
-Output yang dihasilkan di folder `results/`:
-- `results/summary_statistics.csv`: Tabel Mean, Std, Median, IQR, Min, Max, Waktu.
-- `results/statistical_test_report.txt`: Laporan uji hipotesis Mann-Whitney U komprehensif dalam Bahasa Indonesia.
-- `results/boxplot_fitness.png`: Boxplot distribusi fitness GA vs PSO.
-- `results/convergence_comparison.png`: Kurva konvergensi rata-rata $\pm$ std deviasi.
-- `results/final_locations_scatter.png`: Sebaran koordinat akhir 30 run di atas peta.
+
+### 6. Membangun Berkas Dokumen Word Laporan (.docx)
+Untuk menghasilkan berkas dokumen laporan resmi lengkap dengan gambar resolusi tinggi, tabel terformat, dan lampiran:
+```bash
+python build_docx_report.py
+```
+Hasil berkas Word tersimpan di: [`LAPORAN_OPTIMASI_GA_PSO_REVISI.docx`](LAPORAN_OPTIMASI_GA_PSO_REVISI.docx).
+
+---
+
+## 8. Lisensi & Tim Penyusun
+Proyek ini disusun untuk memenuhi Tugas Besar Mata Kuliah **Komputasi Evolusioner / Biocomputing & Optimasi Sistem** dengan studi kasus penataan tata ruang Koperasi Desa (KOPDES) Sukamaju Mandiri.
