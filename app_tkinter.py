@@ -799,7 +799,7 @@ class FacilityLocationTkApp:
 
         if self.view_mode == "split":
             gs = gridspec.GridSpec(
-                2, 2, height_ratios=[3.3, 1.8], hspace=0.38, wspace=0.16,
+                2, 2, height_ratios=[3.3, 1.8], hspace=0.46, wspace=0.16,
                 left=0.06, right=0.98, top=0.94, bottom=0.08
             )
             self.ax_ga = self.fig.add_subplot(gs[0, 0])
@@ -811,7 +811,7 @@ class FacilityLocationTkApp:
             self._draw_conv(self.ax_conv, is_full=False)
 
         elif self.view_mode == "ga":
-            self.fig.subplots_adjust(left=0.07, right=0.97, top=0.94, bottom=0.08)
+            self.fig.subplots_adjust(left=0.07, right=0.97, top=0.94, bottom=0.13)
             self.ax_ga = self.fig.add_subplot(1, 1, 1)
             self.ax_pso = None
             self.ax_conv = None
@@ -819,7 +819,7 @@ class FacilityLocationTkApp:
             self._draw_map_ga(self.ax_ga, is_full=True)
 
         elif self.view_mode == "pso":
-            self.fig.subplots_adjust(left=0.07, right=0.97, top=0.94, bottom=0.08)
+            self.fig.subplots_adjust(left=0.07, right=0.97, top=0.94, bottom=0.13)
             self.ax_ga = None
             self.ax_pso = self.fig.add_subplot(1, 1, 1)
             self.ax_conv = None
@@ -839,8 +839,10 @@ class FacilityLocationTkApp:
     def _draw_map_ga(self, ax, is_full: bool = False):
         """Menggambar peta, heatmap, dan elemen dinamis GA pada aksis ax."""
         ax.clear()
-        cmap_name = "RdYlGn" if self.mode_var.get() == "max" else "RdYlGn_r"
-        title_txt = "GA: Genetic Algorithm — Tampilan Layar Penuh" if is_full else "GA: Genetic Algorithm — Populasi & Elit"
+        is_max = (self.mode_var.get() == "max")
+        cmap_name = "RdYlGn" if is_max else "RdYlGn_r"
+        mode_desc = "Solusi Optimum Terbaik" if is_max else "Titik Terburuk Legal"
+        title_txt = f"GA: Genetic Algorithm — {mode_desc} (Layar Penuh)" if is_full else f"GA: Populasi & Elit — {mode_desc}"
 
         plot_map(
             self.map_model,
@@ -858,12 +860,25 @@ class FacilityLocationTkApp:
         s_pop = 46 if is_full else 34
         s_mut = 60 if is_full else 46
         s_elite = 180 if is_full else 140
-        s_best = 220 if is_full else 180
+        s_best = 320 if is_full else 230
+        s_halo_outer = 650 if is_full else 460
+        s_halo_inner = 420 if is_full else 300
+        lw_halo = 2.8 if is_full else 2.0
+        col_best = "#16a34a" if is_max else "#dc2626"
 
         self.ga_scatter_pop = ax.scatter([], [], c="#1d4ed8", s=s_pop, edgecolors="#0f172a", linewidths=0.6, alpha=0.85, zorder=8, label="Individu")
         self.ga_scatter_mut = ax.scatter([], [], c="#f59e0b", s=s_mut, marker="o", edgecolors="#78350f", linewidths=1.2, alpha=0.90, zorder=9, label="Individu Termutasi")
         self.ga_scatter_elite = ax.scatter([], [], c="#f59e0b", marker="*", s=s_elite, edgecolors="#78350f", linewidths=1.2, zorder=10, label="Elit")
-        self.ga_scatter_best = ax.scatter([], [], c="#16a34a", marker="P", s=s_best, edgecolors="#ffffff", linewidths=1.8, zorder=11, label="Solusi GA")
+        
+        # Cincin bidik target reticle ganda agar titik solusi/terburuk tampak sangat kontras
+        self.ga_scatter_halo_outer = ax.scatter([], [], marker="o", s=s_halo_outer, facecolors="none",
+                                                edgecolors=col_best, linewidths=lw_halo, alpha=0.95, zorder=24)
+        self.ga_scatter_halo_inner = ax.scatter([], [], marker="o", s=s_halo_inner, facecolors="none",
+                                                edgecolors="#ffffff", linewidths=1.6 if is_full else 1.2, alpha=0.95, zorder=24)
+        self.ga_scatter_best = ax.scatter([], [], c=col_best, marker="P", s=s_best, edgecolors="#ffffff", linewidths=2.4, zorder=25, label="Solusi GA")
+
+        # Label teks melayang di atas titik terbaik/terburuk pada peta
+        self.ga_text_best_tag = ax.text(0, 0, "", fontsize=9.0 if is_full else 7.5, weight="bold", ha="center", va="bottom", zorder=30)
 
         # Retikel target crosshair untuk inspeksi titik
         self.inspect_marker_ga_circle = ax.scatter([], [], marker="o", s=240 if is_full else 170, facecolors="none", edgecolors="#e11d48", linewidths=2.5, zorder=20)
@@ -873,24 +888,55 @@ class FacilityLocationTkApp:
             self.inspect_marker_ga_circle.set_offsets([self.last_inspected_pt])
             self.inspect_marker_ga_cross.set_offsets([self.last_inspected_pt])
 
-        leg_y = -0.06 if is_full else -0.12
-        leg_fs = 9 if is_full else 8
-        ax.legend(
+        leg_y = -0.045 if is_full else -0.06
+        leg_fs = 9 if is_full else 7.2
+        title_fs = 10.5 if is_full else 8.5
+        detail_y = -0.125 if is_full else -0.21
+        detail_fs = 8.5 if is_full else 6.8
+
+        target_title = "★ SOLUSI OPTIMUM TERBAIK (MAKSIMASI)" if is_max else "▲ TITIK TERBURUK LEGAL (MINIMASI)"
+        sol_label = "+ Solusi Optimum Terbaik" if is_max else "+ Titik Terburuk Legal"
+        leg_color = "#15803d" if is_max else "#dc2626"
+
+        leg = ax.legend(
             [self.ga_scatter_pop, self.ga_scatter_mut, self.ga_scatter_elite, self.ga_scatter_best],
-            ["Individu (Populasi)", "Individu Termutasi", "★ Elit Terpilih", "+ Solusi Terbaik GA"],
+            ["Individu (Populasi)", "Termutasi", "★ Elit Terpilih", sol_label],
             loc="upper center",
             bbox_to_anchor=(0.5, leg_y),
             ncol=4,
             fontsize=leg_fs,
-            framealpha=0.95,
-            edgecolor="#cbd5e1",
+            title=target_title,
+            title_fontsize=title_fs,
+            framealpha=0.96,
+            facecolor="#f8fafc",
+            edgecolor="#94a3b8",
+        )
+        if leg.get_title():
+            leg.get_title().set_fontweight("bold")
+            leg.get_title().set_color(leg_color)
+
+        detail_txt = (
+            "Keterangan Objek:   [S] Sekolah   •   [P] Pasar   •   [B] Bengkel   •   [R] Restoran   •   [K] Kompetitor   •   [M] Masjid"
+            if is_full else
+            "[S] Sekolah   [P] Pasar   [B] Bengkel   [R] Restoran   [K] Kompetitor   [M] Masjid"
+        )
+        ax.text(
+            0.5, detail_y, detail_txt,
+            transform=ax.transAxes,
+            ha="center", va="top",
+            fontsize=detail_fs, weight="bold", color="#1e293b",
+            bbox=dict(boxstyle="round,pad=0.3" if is_full else "round,pad=0.22",
+                      facecolor="#f1f5f9", edgecolor="#cbd5e1", linewidth=0.9, alpha=0.95),
+            zorder=20
         )
 
     def _draw_map_pso(self, ax, is_full: bool = False):
         """Menggambar peta, heatmap, dan elemen dinamis PSO pada aksis ax."""
         ax.clear()
-        cmap_name = "RdYlGn" if self.mode_var.get() == "max" else "RdYlGn_r"
-        title_txt = "PSO: Particle Swarm Optimization — Tampilan Layar Penuh" if is_full else "PSO: Particle Swarm Optimization — Swarm & Quiver"
+        is_max = (self.mode_var.get() == "max")
+        cmap_name = "RdYlGn" if is_max else "RdYlGn_r"
+        mode_desc = "Solusi Optimum Terbaik" if is_max else "Titik Terburuk Legal"
+        title_txt = f"PSO: Particle Swarm Optimization — {mode_desc} (Layar Penuh)" if is_full else f"PSO: Swarm & Quiver — {mode_desc}"
 
         plot_map(
             self.map_model,
@@ -908,13 +954,26 @@ class FacilityLocationTkApp:
         lw_trail = 1.4 if is_full else 1.1
         s_swarm = 46 if is_full else 36
         s_pbest = 60 if is_full else 45
-        s_gbest = 220 if is_full else 180
+        s_gbest = 320 if is_full else 230
+        s_halo_outer = 650 if is_full else 460
+        s_halo_inner = 420 if is_full else 300
+        lw_halo = 2.8 if is_full else 2.0
+        col_gbest = "#16a34a" if is_max else "#dc2626"
 
         self.pso_trail_lines = [ax.plot([], [], color="#0284c7", linewidth=lw_trail, alpha=0.45, zorder=7)[0] for _ in range(40)]
         self.pso_scatter_swarm = ax.scatter([], [], c="#0284c7", s=s_swarm, edgecolors="#0f172a", linewidths=0.8, alpha=0.85, zorder=8, label="Partikel")
         self.pso_quiver = None
         self.pso_scatter_pbest = ax.scatter([], [], c="#f97316", marker=".", s=s_pbest, alpha=0.75, zorder=9, label="pbest")
-        self.pso_scatter_gbest = ax.scatter([], [], c="#dc2626", marker="P", s=s_gbest, edgecolors="#ffffff", linewidths=1.8, zorder=11, label="gbest (PSO)")
+        
+        # Cincin bidik target reticle ganda agar titik gbest tampak sangat kontras
+        self.pso_scatter_halo_outer = ax.scatter([], [], marker="o", s=s_halo_outer, facecolors="none",
+                                                 edgecolors=col_gbest, linewidths=lw_halo, alpha=0.95, zorder=24)
+        self.pso_scatter_halo_inner = ax.scatter([], [], marker="o", s=s_halo_inner, facecolors="none",
+                                                 edgecolors="#ffffff", linewidths=1.6 if is_full else 1.2, alpha=0.95, zorder=24)
+        self.pso_scatter_gbest = ax.scatter([], [], c=col_gbest, marker="P", s=s_gbest, edgecolors="#ffffff", linewidths=2.4, zorder=25, label="gbest")
+
+        # Label teks melayang di atas titik gbest pada peta
+        self.pso_text_best_tag = ax.text(0, 0, "", fontsize=9.0 if is_full else 7.5, weight="bold", ha="center", va="bottom", zorder=30)
 
         # Retikel target crosshair untuk inspeksi titik
         self.inspect_marker_pso_circle = ax.scatter([], [], marker="o", s=240 if is_full else 170, facecolors="none", edgecolors="#e11d48", linewidths=2.5, zorder=20)
@@ -924,17 +983,46 @@ class FacilityLocationTkApp:
             self.inspect_marker_pso_circle.set_offsets([self.last_inspected_pt])
             self.inspect_marker_pso_cross.set_offsets([self.last_inspected_pt])
 
-        leg_y = -0.06 if is_full else -0.12
-        leg_fs = 9 if is_full else 8
-        ax.legend(
+        leg_y = -0.045 if is_full else -0.06
+        leg_fs = 9 if is_full else 7.4
+        title_fs = 10.5 if is_full else 8.5
+        detail_y = -0.125 if is_full else -0.21
+        detail_fs = 8.5 if is_full else 6.8
+
+        target_title = "★ SOLUSI OPTIMUM TERBAIK (MAKSIMASI)" if is_max else "▲ TITIK TERBURUK LEGAL (MINIMASI)"
+        sol_label = "+ gbest: Solusi Optimum Terbaik" if is_max else "+ gbest: Titik Terburuk Legal"
+        leg_color = "#15803d" if is_max else "#dc2626"
+
+        leg = ax.legend(
             [self.pso_scatter_swarm, self.pso_scatter_pbest, self.pso_scatter_gbest],
-            ["Partikel Swarm", "pbest (Terbaik Pribadi)", "+ gbest (Terbaik Global)"],
+            ["Partikel Swarm", "pbest (Terbaik Pribadi)", sol_label],
             loc="upper center",
             bbox_to_anchor=(0.5, leg_y),
             ncol=3,
             fontsize=leg_fs,
-            framealpha=0.95,
-            edgecolor="#cbd5e1",
+            title=target_title,
+            title_fontsize=title_fs,
+            framealpha=0.96,
+            facecolor="#f8fafc",
+            edgecolor="#94a3b8",
+        )
+        if leg.get_title():
+            leg.get_title().set_fontweight("bold")
+            leg.get_title().set_color(leg_color)
+
+        detail_txt = (
+            "Keterangan Objek:   [S] Sekolah   •   [P] Pasar   •   [B] Bengkel   •   [R] Restoran   •   [K] Kompetitor   •   [M] Masjid"
+            if is_full else
+            "[S] Sekolah   [P] Pasar   [B] Bengkel   [R] Restoran   [K] Kompetitor   [M] Masjid"
+        )
+        ax.text(
+            0.5, detail_y, detail_txt,
+            transform=ax.transAxes,
+            ha="center", va="top",
+            fontsize=detail_fs, weight="bold", color="#1e293b",
+            bbox=dict(boxstyle="round,pad=0.3" if is_full else "round,pad=0.22",
+                      facecolor="#f1f5f9", edgecolor="#cbd5e1", linewidth=0.9, alpha=0.95),
+            zorder=20
         )
 
     def _draw_conv(self, ax, is_full: bool = False):
@@ -972,6 +1060,7 @@ class FacilityLocationTkApp:
 
         rec_ga = self.ga_history[idx_ga]
         rec_pso = self.pso_history[idx_pso]
+        is_max = (self.mode_var.get() == "max")
 
         # 1. Update GA jika aksis aktif
         if self.ax_ga is not None:
@@ -993,6 +1082,25 @@ class FacilityLocationTkApp:
 
             ga_best_pts = rec_ga.best_position.reshape((-1, 2))
             self.ga_scatter_best.set_offsets(ga_best_pts)
+            self.ga_scatter_halo_outer.set_offsets(ga_best_pts)
+            self.ga_scatter_halo_inner.set_offsets(ga_best_pts)
+
+            is_full_ga = (self.view_mode == "ga")
+            bx, by = float(rec_ga.best_position[0]), float(rec_ga.best_position[1])
+            off_dist_ga = 48 if is_full_ga else 36
+            off_y = -off_dist_ga if by > 1360 else off_dist_ga
+            self.ga_text_best_tag.set_position((bx, by + off_y))
+            tag_text_ga = "★ Titik Optimum" if is_max else "▲ Titik Terburuk"
+            tag_bg_ga = "#16a34a" if is_max else "#dc2626"
+            self.ga_text_best_tag.set_text(tag_text_ga)
+            self.ga_text_best_tag.set_color("#ffffff")
+            self.ga_text_best_tag.set_bbox(dict(
+                boxstyle="round,pad=0.35" if is_full_ga else "round,pad=0.25",
+                facecolor=tag_bg_ga,
+                edgecolor="#ffffff",
+                linewidth=1.8 if is_full_ga else 1.3,
+                alpha=0.98
+            ))
 
         # 2. Update PSO jika aksis aktif
         if self.ax_pso is not None:
@@ -1027,6 +1135,25 @@ class FacilityLocationTkApp:
             self.pso_scatter_pbest.set_offsets(rec_pso.pbest_positions[:, :2])
             pso_gbest_pts = rec_pso.gbest_position.reshape((-1, 2))
             self.pso_scatter_gbest.set_offsets(pso_gbest_pts)
+            self.pso_scatter_halo_outer.set_offsets(pso_gbest_pts)
+            self.pso_scatter_halo_inner.set_offsets(pso_gbest_pts)
+
+            is_full_pso = (self.view_mode == "pso")
+            px, py = float(rec_pso.gbest_position[0]), float(rec_pso.gbest_position[1])
+            off_dist_pso = 48 if is_full_pso else 36
+            off_py = -off_dist_pso if py > 1360 else off_dist_pso
+            self.pso_text_best_tag.set_position((px, py + off_py))
+            tag_text_pso = "★ Titik Optimum" if is_max else "▲ Titik Terburuk"
+            tag_bg_pso = "#16a34a" if is_max else "#dc2626"
+            self.pso_text_best_tag.set_text(tag_text_pso)
+            self.pso_text_best_tag.set_color("#ffffff")
+            self.pso_text_best_tag.set_bbox(dict(
+                boxstyle="round,pad=0.35" if is_full_pso else "round,pad=0.25",
+                facecolor=tag_bg_pso,
+                edgecolor="#ffffff",
+                linewidth=1.8 if is_full_pso else 1.3,
+                alpha=0.98
+            ))
 
         # 3. Update Konvergensi jika aksis aktif
         if self.ax_conv is not None:

@@ -153,6 +153,28 @@ Kedua algoritma diuji dengan protokol **Matched Budget** tepat **2.000 kali eval
 
 ---
 
+### Animasi GIF Dinamika Optimasi (Mode Maksimasi & Mode Minimasi)
+
+Berikut adalah animasi GIF proses pencarian solusi langkah demi langkah (53 generasi/iterasi):
+
+#### 1. Mode Maksimasi (Mencari Lokasi Terbaik KOPDES — Titik di Jalan Utama Desa)
+- **Simulasi Split-Screen Maksimasi (GA + PSO + Konvergensi)**:
+  ![Animasi Maksimasi Split Screen](results/simulasi_maksimasi_split.gif)
+- **Evolusi Algoritma Genetika (GA Maksimasi)**:
+  ![Animasi GA Maksimasi](results/ga_maksimasi.gif)
+- **Pergerakan Kawanan Partikel (PSO Maksimasi)**:
+  ![Animasi PSO Maksimasi](results/pso_maksimasi.gif)
+
+#### 2. Mode Minimasi Valid (Mencari Lokasi Terburuk Sah — Titik di Jalan Tanah Hauling)
+- **Simulasi Split-Screen Minimasi (GA + PSO + Konvergensi)**:
+  ![Animasi Minimasi Split Screen](results/simulasi_minimasi_split.gif)
+- **Evolusi Algoritma Genetika (GA Minimasi)**:
+  ![Animasi GA Minimasi](results/ga_minimasi.gif)
+- **Pergerakan Kawanan Partikel (PSO Minimasi)**:
+  ![Animasi PSO Minimasi](results/pso_minimasi.gif)
+
+---
+
 ### Tabel Perbandingan Kinerja (30 Run Independen):
 
 | Metrik Evaluasi | Genetic Algorithm (GA) | Particle Swarm Optimization (PSO) | Evaluasi Ilmiah |
@@ -189,6 +211,7 @@ biocomputing-7/
 ├── stats_utils.py                  # Helper kalkulasi statistik deskriptif & non-parametrik
 ├── generate_maps.py                # Generator preset peta wilayah desa
 ├── build_docx_report.py            # Generator otomatis berkas laporan formal Word (.docx)
+├── export_optimization_gifs.py     # Script generator 6 animasi GIF (Maksimasi & Minimasi)
 ├── LAPORAN_OPTIMASI_GA_PSO.md      # Laporan akademik lengkap format Markdown
 ├── LAPORAN_OPTIMASI_GA_PSO_REVISI.docx # Laporan akademik formal Word lengkap dengan gambar & tabel
 ├── test_facility.py                # Unit test (Pytest) untuk evaluasi, counter, dan batasan geometri
@@ -197,12 +220,18 @@ biocomputing-7/
 │   ├── desa_ramai.json
 │   ├── hauling.json
 │   └── campuran.json
-└── results/                        # Direktori output visualisasi & data statistik
+└── results/                        # Direktori output visualisasi, GIF animasi, & data statistik
     ├── map_study_area.png
     ├── tkinter_simulasi_split.png
     ├── tkinter_simulasi_ga_full.png
     ├── tkinter_simulasi_pso_full.png
     ├── tkinter_simulasi_conv_full.png
+    ├── ga_maksimasi.gif            # Animasi evolusi GA (lokasi terbaik)
+    ├── pso_maksimasi.gif           # Animasi swarm PSO (lokasi terbaik)
+    ├── simulasi_maksimasi_split.gif# Animasi split view maksimasi (GA + PSO + konvergensi)
+    ├── ga_minimasi.gif             # Animasi evolusi GA (lokasi terburuk sah)
+    ├── pso_minimasi.gif            # Animasi swarm PSO (lokasi terburuk sah)
+    ├── simulasi_minimasi_split.gif # Animasi split view minimasi (GA + PSO + konvergensi)
     ├── raw_runs.csv
     ├── summary_statistics.csv
     └── statistical_test_report.txt
