@@ -1,7 +1,7 @@
-# Optimasi Penentuan Lokasi Fasilitas Koperasi Desa (KOPDES) Sukamaju Mandiri
+# Optimasi Penentuan Lokasi Fasilitas Koperasi Desa (KOPDES) Legok 
 ### Perbandingan Algoritma Genetika (GA) dan Particle Swarm Optimization (PSO) Berbasis Data Lapangan Spasial
 
-Proyek komputasi evolusioner ini memodelkan dan menyelesaikan permasalahan nyata **Facility Location Problem (FLP)**: menentukan koordinat lokasi pembangunan gedung terpadu **Koperasi Desa (KOPDES) Sukamaju Mandiri** di dalam 1 wilayah desa seluas **300 Hektar (2.0 km × 1.5 km = 2.000 m × 1.500 m)**. 
+Proyek komputasi evolusioner ini memodelkan dan menyelesaikan permasalahan nyata **Facility Location Problem (FLP)**: menentukan koordinat lokasi pembangunan gedung terpadu **Koperasi Desa (KOPDES) Legok ** di dalam 1 wilayah desa seluas **300 Hektar (2.0 km × 1.5 km = 2.000 m × 1.500 m)**. 
 
 Implementasi **Real-Coded Genetic Algorithm (GA)** dan **Continuous Particle Swarm Optimization (PSO)** ditulis **murni dari nol (*from scratch*)** menggunakan pustaka saintifik Python (**NumPy, SciPy, Pandas, Matplotlib, Tkinter, Pytest**) tanpa bergantung pada pustaka optimasi siap pakai (seperti DEAP atau PySwarms). Hal ini memastikan setiap operator matematis, seleksi, rekombinasi, pergerakan partikel, dan penanganan batasan spasial dapat dipertanggungjawabkan secara transparan dan terverifikasi secara ilmiah.
 
@@ -11,8 +11,8 @@ Implementasi **Real-Coded Genetic Algorithm (GA)** dan **Continuous Particle Swa
 
 Wilayah studi memodelkan 1 desa lengkap dengan dinamika heterogen yang mencakup sentra permukiman warga, persawahan irigasi teknis, jaringan jalan berbagai kelas perkerasan, fasilitas publik, dan kawasan lindung:
 
-![Peta Tata Ruang Wilayah Desa Sukamaju pada Kanvas Tkinter](results/map_study_area.png)
-*Gambar 1: Peta Tata Ruang Wilayah Desa Sukamaju (2.0 km × 1.5 km) yang dirender langsung pada kanvas grafis Tkinter.*
+![Peta Tata Ruang Wilayah Desa Legokpada Kanvas Tkinter](results/map_study_area.png)
+*Gambar 1: Peta Tata Ruang Wilayah Desa Legok(2.0 km × 1.5 km) yang dirender langsung pada kanvas grafis Tkinter.*
 
 ### Karakteristik Spasial Wilayah Desa:
 1. **Permukiman Warga Desa (520 KK)**: Tersebar pada 50 klaster perumahan di sisi barat dengan populasi 4 hingga 18 KK per klaster.
@@ -21,11 +21,11 @@ Wilayah studi memodelkan 1 desa lengkap dengan dinamika heterogen yang mencakup 
    - **Jalan Kolektor / Jalan Utama Desa** (Lebar 11.0 pt, aspal kokoh dilewati seluruh warga dan truk logistik pupuk, mutu $K = 0.85$).
    - **Jalan Lokal Lingkungan** (Lebar 6.0 pt, paving block sempit antar dusun, mutu $K = 0.60$).
    - **Jalan Hauling / Tanah Lumpur** (Lebar 5.0 pt, jalan tanah merah di timur yang becek dan licin saat hujan, mutu $K = 0.20$).
-3. **Fasilitas Publik Eksisting**: Pasar Desa ($\beta = 2.0$), SDN Sukamaju 1 ($\beta = 1.5$), Warung Makan ($\beta = 1.2$), Bengkel Motor ($\beta = 0.8$), dan Masjid Jami'/Balai Desa ($\beta = 1.0$).
+3. **Fasilitas Publik Eksisting**: Pasar Desa ($\beta = 2.0$), SDN Legok1 ($\beta = 1.5$), Warung Makan ($\beta = 1.2$), Bengkel Motor ($\beta = 0.8$), dan Masjid Jami'/Balai Desa ($\beta = 1.0$).
 4. **Warung Kelontong Warga Lama (Kompetitor K)**: Terletak di koordinat $(X = 860\text{ m}, Y = 800\text{ m})$ dekat jembatan desa.
 5. **Zona Terlarang Dilindungi (Dilarang Membangun Fisik)**:
    - Poligon Sawah Irigasi Produktif (dilindungi Perda LP2B).
-   - Poligon Sempadan Sungai Sukamaju (rawan banjir bandang & erosi tebing).
+   - Poligon Sempadan Sungai Legok(rawan banjir bandang & erosi tebing).
    - Poligon Hutan Lindung Adat (konservasi tangkapan air utara).
    - Poligon Galian Tambang C (area berbahaya operasional alat berat).
 
@@ -83,7 +83,7 @@ $$S_{\text{road}}(\mathbf{x}) = K_{\text{class}}(\mathbf{x}) \cdot \exp\left( - 
 Menghitung daya tarik keramaian dari fasilitas publik desa eksisting (*trip-chaining*):
 $$S_{\text{fac}}(\mathbf{x}) = \operatorname{clip}\left( \frac{1}{M_{\text{fac}}} \sum_{k \in \mathcal{K}} \beta_k \sum_{j=1}^{M_k} f_{k,j} \cdot \exp\left( - \frac{\|\mathbf{x} - \mathbf{p}_{k,j}\|^2}{2 \sigma_{\text{fac}}^2} \right), 0.0, 1.0 \right)$$
 - $\beta_{\text{pasar}} = 2.0$ (Pasar Desa: magnet ekonomi harian terbesar).
-- $\beta_{\text{sekolah}} = 1.5$ (SDN Sukamaju 1: titik kumpul pagi hari orang tua murid).
+- $\beta_{\text{sekolah}} = 1.5$ (SDN Legok1: titik kumpul pagi hari orang tua murid).
 - $\beta_{\text{warung}} = 1.2$, $\beta_{\text{masjid/kantor}} = 1.0$, $\beta_{\text{bengkel}} = 0.8$.
 - $\sigma_{\text{fac}} = 200.0\text{ meter}$.
 
@@ -281,4 +281,4 @@ Hasil berkas Word tersimpan di: [`LAPORAN_OPTIMASI_GA_PSO_REVISI.docx`](LAPORAN_
 ---
 
 ## 8. Lisensi & Tim Penyusun
-Proyek ini disusun untuk memenuhi Tugas Besar Mata Kuliah **Komputasi Evolusioner / Biocomputing & Optimasi Sistem** dengan studi kasus penataan tata ruang Koperasi Desa (KOPDES) Sukamaju Mandiri.
+Proyek ini disusun untuk memenuhi Tugas Besar Mata Kuliah **Komputasi Evolusioner / Biocomputing & Optimasi Sistem** dengan studi kasus penataan tata ruang Koperasi Desa (KOPDES) Legok .
